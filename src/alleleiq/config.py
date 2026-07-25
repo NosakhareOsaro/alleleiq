@@ -57,6 +57,8 @@ class Settings(BaseSettings):
     # ── ClinVar (NCBI E-utilities) client ────────────────────────────
     clinvar_api_url: str = Field(default="https://eutils.ncbi.nlm.nih.gov/entrez/eutils")
     clinvar_api_key: str | None = Field(default=None)
+    clinvar_timeout_seconds: float = Field(default=30.0, gt=0)
+    clinvar_max_retries: int = Field(default=3, ge=0)
     clinvar_requests_per_second_no_key: float = Field(default=3.0, gt=0)
     clinvar_requests_per_second_with_key: float = Field(default=10.0, gt=0)
     clinvar_min_stars_strong_evidence: int = Field(default=2, ge=0, le=4)
@@ -128,6 +130,16 @@ class Settings(BaseSettings):
             "sas": self.coverage_threshold_sas,
             "oth": self.coverage_threshold_oth,
         }
+
+    @property
+    def clinvar_min_request_interval_seconds(self) -> float:
+        """Minimum seconds between ClinVar requests, given NCBI's key-gated rate limits."""
+        requests_per_second = (
+            self.clinvar_requests_per_second_with_key
+            if self.clinvar_api_key
+            else self.clinvar_requests_per_second_no_key
+        )
+        return 1.0 / requests_per_second
 
 
 @lru_cache(maxsize=1)

@@ -99,6 +99,11 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "S105", "S106"]
+# FastAPI's dependency-injection idiom requires Depends()/File()/Form() as
+# argument defaults; B008 (no function calls in defaults) is a false
+# positive here, since FastAPI evaluates these per-request, not at
+# function-definition time.
+"src/alleleiq/api/routers/*.py" = ["B008"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["alleleiq"]

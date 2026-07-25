@@ -16,6 +16,9 @@
       <TraitSet>
         <Trait>
           <Name>
+            <ElementValue Type="Alternate">Familial breast-ovarian cancer syndrome</ElementValue>
+          </Name>
+          <Name>
             <ElementValue Type="Preferred">Hereditary breast and ovarian cancer syndrome</ElementValue>
           </Name>
         </Trait>

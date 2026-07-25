@@ -32,9 +32,7 @@
         "polyphen_prediction": "probably_damaging",
         "sift_score": 0.0,
         "sift_prediction": "deleterious",
-        "dbnsfp": {
-          "REVEL_score": "0.912"
-        },
+        "revel_score": ".,.,0.912,.,0.912",
         "spliceai": {
           "DS_AG": 0.01,
           "DS_AL": 0.0,

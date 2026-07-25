@@ -91,7 +91,9 @@ def _benign_report() -> EvidenceReport:
             code=ACMGCode.BA1,
             strength=EvidenceStrength.BENIGN_STANDALONE,
             met=True,
-            evidence_basis="Allele frequency 0.1200 in Non-Finnish European exceeds the BA1 threshold",
+            evidence_basis=(
+                "Allele frequency 0.1200 in Non-Finnish European exceeds the BA1 threshold"
+            ),
             data_source="gnomAD v4",
         ),
     ]

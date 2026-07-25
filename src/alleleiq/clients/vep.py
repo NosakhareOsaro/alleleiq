@@ -1,15 +1,14 @@
 """Ensembl VEP REST client: consequence, transcript, REVEL, and SpliceAI annotation.
 
-Clinical deployment note: the public ``rest.ensembl.org`` endpoint (the
-default in ``.env.example``) does **not** serve REVEL or SpliceAI scores —
-those come from the dbNSFP and SpliceAI VEP plugins, which require plugin
-data files installed alongside a *self-hosted* VEP instance. This is the
-standard clinical deployment pattern (NHS genomics labs typically run
-their own annotated VEP), so this client is written to parse those
-fields when present. Against the public endpoint, ``revel_score`` and
-the ``spliceai_*`` fields will simply be ``None``, and
-:mod:`alleleiq.scoring.criteria.computational` already treats that as
-"computational evidence unavailable" rather than "benign".
+Field shapes verified directly against the live ``rest.ensembl.org``
+API (2026-07): with ``dbNSFP=REVEL_score`` and ``SpliceAI=1`` set, the
+public endpoint *does* serve both, at the transcript-consequence level
+(not nested under a ``dbnsfp`` sub-object, despite that being the
+plugin's name) — ``numbers=1`` is required to get the ``exon`` field
+PVS1 depends on. ``revel_score`` comes back as a comma-separated string
+of per-RefSeq-transcript-match scores with ``.`` placeholders for
+transcripts lacking a score (e.g. ``".,.,0.229,.,0.229"``), not a
+single float, so it must be parsed accordingly.
 """
 
 from __future__ import annotations
@@ -21,17 +20,15 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from alleleiq.config import Settings, get_settings
 from alleleiq.exceptions import VEPError
-from alleleiq.logging import get_logger
 from alleleiq.models.variant import GenomicCoordinates
 
 from .base import BaseClient
-
-logger = get_logger(__name__)
 
 _ANNOTATION_PARAMS = {
     "canonical": "1",
     "mane": "1",
     "hgvs": "1",
+    "numbers": "1",
     "dbNSFP": "REVEL_score",
     "SpliceAI": "1",
 }
@@ -169,6 +166,34 @@ class VEPClient(BaseClient):
         """Render coordinates as VEP's ``CHROM POS ID REF ALT QUAL FILTER INFO`` input line."""
         return f"{coordinates.chrom} {coordinates.pos} . {coordinates.ref} {coordinates.alt} . . ."
 
+    @staticmethod
+    def _parse_revel_score(revel_raw: object) -> float | None:
+        """Parse VEP's ``revel_score`` field.
+
+        Verified against the live API: this arrives as a comma-separated
+        string of per-RefSeq-transcript-match scores, using ``.`` for
+        transcripts with no score, e.g. ``".,.,0.229,.,0.229"``. In
+        practice, all non-placeholder values for a given variant agree
+        (they are redundant mappings to the same underlying prediction),
+        so the first parseable value is used.
+        """
+        if revel_raw is None:
+            return None
+        if isinstance(revel_raw, (int, float)):
+            return float(revel_raw)
+        if not isinstance(revel_raw, str):
+            return None
+
+        for candidate in revel_raw.split(","):
+            candidate = candidate.strip()
+            if not candidate or candidate == ".":
+                continue
+            try:
+                return float(candidate)
+            except ValueError:
+                continue
+        return None
+
     @classmethod
     def _parse_entry(cls, entry: dict[str, Any]) -> VEPAnnotation:
         variant_id = cls._variant_id_from_input(str(entry.get("input", "")))
@@ -178,15 +203,7 @@ class VEPClient(BaseClient):
         revel_score: float | None = None
         spliceai: dict[str, Any] = {}
         if primary is not None:
-            revel_raw: object = (primary.get("dbnsfp") or {}).get("REVEL_score")
-            if isinstance(revel_raw, (str, int, float)) and str(revel_raw) != "":
-                try:
-                    revel_score = float(revel_raw)
-                except (TypeError, ValueError):
-                    logger.warning(
-                        "could not parse REVEL score from VEP response",
-                        extra={"transcript_id": primary.get("transcript_id")},
-                    )
+            revel_score = cls._parse_revel_score(primary.get("revel_score"))
             spliceai = primary.get("spliceai") or {}
 
         return VEPAnnotation(

@@ -165,7 +165,9 @@ class ClinVarClient(BaseClient):
             response = await self._request(
                 "GET",
                 "/efetch.fcgi",
-                params=self._with_auth({"db": "clinvar", "id": uid, "rettype": "vcv"}),
+                params=self._with_auth(
+                    {"db": "clinvar", "id": uid, "rettype": "vcv", "is_variationid": "true"}
+                ),
             )
         except httpx.HTTPError as exc:
             raise ClinVarError(f"ClinVar efetch failed: {exc}") from exc
@@ -205,7 +207,7 @@ class ClinVarClient(BaseClient):
         submitter_count = len(archive.findall(".//ClinicalAssertionList/ClinicalAssertion"))
 
         condition = None
-        trait_name = archive.find(".//TraitSet/Trait/Name/ElementValue")
+        trait_name = archive.find(".//TraitSet/Trait/Name/ElementValue[@Type='Preferred']")
         if trait_name is not None and trait_name.text:
             condition = trait_name.text
 

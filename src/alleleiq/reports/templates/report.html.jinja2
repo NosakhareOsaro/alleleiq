@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AlleleIQ Evidence Report — {{ report.variant.gene_symbol or "Variant" }} {{ report.variant.coordinates.chrom }}:{{ report.variant.coordinates.pos }}</title>
+<style>
+  :root {
+    --colour-ink: #1a1f26;
+    --colour-muted: #5b6672;
+    --colour-border: #d7dce2;
+    --colour-bg: #ffffff;
+    --colour-bg-alt: #f6f8fa;
+    --colour-red: #b3261e;
+    --colour-red-bg: #fdecea;
+    --colour-amber: #8a5a00;
+    --colour-amber-bg: #fff4de;
+    --colour-green: #1e6b3c;
+    --colour-green-bg: #e9f7ee;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--colour-ink);
+    background: var(--colour-bg);
+    margin: 0;
+    padding: 0;
+    line-height: 1.5;
+  }
+  .page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 3rem;
+  }
+  header.masthead {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 3px solid var(--colour-ink);
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .masthead .brand {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .masthead .brand span { color: var(--colour-muted); font-weight: 400; }
+  .masthead .meta {
+    text-align: right;
+    font-size: 0.85rem;
+    color: var(--colour-muted);
+  }
+  .disclaimer-box {
+    border: 2px solid var(--colour-red);
+    background: var(--colour-red-bg);
+    color: var(--colour-red);
+    padding: 1rem 1.25rem;
+    border-radius: 6px;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+  }
+  section { margin-bottom: 2rem; }
+  h2 {
+    font-size: 1.05rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--colour-muted);
+    border-bottom: 1px solid var(--colour-border);
+    padding-bottom: 0.4rem;
+    margin-bottom: 0.9rem;
+  }
+  .variant-summary dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.35rem 1rem;
+    margin: 0;
+  }
+  .variant-summary dt { color: var(--colour-muted); font-size: 0.85rem; }
+  .variant-summary dd { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .classification-banner {
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .classification-banner .label {
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+  .classification-banner .sub {
+    font-size: 0.85rem;
+    opacity: 0.85;
+  }
+  .classification-pathogenic { background: var(--colour-red-bg); color: var(--colour-red); }
+  .classification-vus { background: var(--colour-amber-bg); color: var(--colour-amber); }
+  .classification-benign { background: var(--colour-green-bg); color: var(--colour-green); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 0.5rem 0.6rem;
+    border-bottom: 1px solid var(--colour-border);
+    vertical-align: top;
+  }
+  th { color: var(--colour-muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; }
+  tr.gap-warning { background: var(--colour-amber-bg); }
+  tr.gap-critical { background: var(--colour-red-bg); }
+  .flag-pill {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+  }
+  .flag-pill.gap-warning { background: var(--colour-amber); color: #fff; }
+  .flag-pill.gap-critical { background: var(--colour-red); color: #fff; }
+  .conflict-box {
+    border-left: 4px solid var(--colour-red);
+    background: var(--colour-red-bg);
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.6rem;
+    font-size: 0.9rem;
+  }
+  .not-assessed-box {
+    border-left: 4px solid var(--colour-amber);
+    background: var(--colour-amber-bg);
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.6rem;
+    font-size: 0.9rem;
+  }
+  details.audit-trail summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--colour-muted);
+    margin-bottom: 0.75rem;
+  }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  footer {
+    border-top: 1px solid var(--colour-border);
+    padding-top: 1rem;
+    margin-top: 2rem;
+    font-size: 0.78rem;
+    color: var(--colour-muted);
+  }
+  @media print {
+    body { padding: 0; }
+    .page { max-width: none; padding: 0.5in; }
+    details.audit-trail { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="masthead">
+    <div class="brand">AlleleIQ <span>evidence report</span></div>
+    <div class="meta">
+      Report ID: <span class="mono">{{ report.metadata.report_id }}</span><br>
+      Generated: {{ report.metadata.generated_at }}<br>
+      AlleleIQ v{{ report.metadata.alleleiq_version }}
+    </div>
+  </header>
+
+  <div class="disclaimer-box">{{ report.clinical_disclaimer }}</div>
+
+  <section class="variant-summary">
+    <h2>Variant summary</h2>
+    <dl>
+      <dt>Gene</dt><dd>{{ report.variant.gene_symbol or "—" }}</dd>
+      <dt>Transcript</dt><dd>{{ report.variant.transcript_id or "—" }}</dd>
+      <dt>Coordinates</dt><dd>{{ report.variant.coordinates.chrom }}:{{ report.variant.coordinates.pos }} {{ report.variant.coordinates.ref }}&gt;{{ report.variant.coordinates.alt }} ({{ report.variant.coordinates.genome_build }})</dd>
+      <dt>HGVS c.</dt><dd>{{ report.variant.hgvs_c or "—" }}</dd>
+      <dt>HGVS p.</dt><dd>{{ report.variant.hgvs_p or "—" }}</dd>
+      <dt>Consequence</dt><dd>{{ report.variant.consequence or "—" }}</dd>
+    </dl>
+  </section>
+
+  <section>
+    <h2>Preliminary classification</h2>
+    <div class="classification-banner {{ classification_css_class }}">
+      <div>
+        <div class="label">{{ report.bayesian_score.preliminary_classification | replace("_", " ") }}</div>
+        <div class="sub">Confidence: {{ report.bayesian_score.classification_confidence }}</div>
+      </div>
+      <div class="sub">
+        Evidence points: <strong>{{ report.bayesian_score.evidence_points }}</strong>
+        (range if unresolved criteria settle either way:
+        {{ report.bayesian_score.evidence_points_confidence_interval[0] }}
+        to
+        {{ report.bayesian_score.evidence_points_confidence_interval[1] }})
+      </div>
+    </div>
+  </section>
+
+  {% if report.bayesian_score.conflict_flags %}
+  <section>
+    <h2>Conflict flags</h2>
+    {% for flag in report.bayesian_score.conflict_flags %}
+    <div class="conflict-box">{{ flag }}</div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <section>
+    <h2>Population frequency (gnomAD v4, per ancestry)</h2>
+    <p style="font-size:0.85rem;color:var(--colour-muted);">{{ report.population_analysis.coverage_summary.clinical_advisory }}</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Ancestry</th><th>AC</th><th>AN</th><th>AF</th><th>95% CI</th><th>Coverage</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in population_rows %}
+        <tr class="{{ row.gap_css_class }}">
+          <td>{{ row.display_name }} ({{ row.ancestry_code }})</td>
+          <td>{{ row.allele_count if row.allele_count is not none else "—" }}</td>
+          <td>{{ row.allele_number }}</td>
+          <td>{{ "%.4g"|format(row.allele_frequency) if row.allele_frequency is not none else "—" }}</td>
+          <td>{{ row.confidence_interval_95 if row.confidence_interval_95 else "—" }}</td>
+          <td>
+            {% if row.gap_flag_level %}
+            <span class="flag-pill {{ row.gap_css_class }}">{{ row.gap_flag_level }}</span>
+            <div style="font-size:0.78rem;margin-top:0.25rem;color:var(--colour-muted);">{{ row.gap_message }}</div>
+            {% else %}
+            adequate
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>ACMG/AMP criteria evaluation</h2>
+
+    <h3 style="font-size:0.9rem;">Applied</h3>
+    <table>
+      <thead><tr><th>Code</th><th>Strength</th><th>Basis</th><th>Source</th></tr></thead>
+      <tbody>
+        {% for c in report.evidence_evaluation.criteria_applied %}
+        <tr><td>{{ c.code }}</td><td>{{ c.strength }}</td><td>{{ c.evidence_basis }}</td><td>{{ c.data_source }}</td></tr>
+        {% else %}
+        <tr><td colspan="4">None applied.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <h3 style="font-size:0.9rem;margin-top:1.25rem;">Not met</h3>
+    <table>
+      <thead><tr><th>Code</th><th>Strength</th><th>Basis</th><th>Source</th></tr></thead>
+      <tbody>
+        {% for c in report.evidence_evaluation.criteria_not_met %}
+        <tr><td>{{ c.code }}</td><td>{{ c.strength }}</td><td>{{ c.evidence_basis }}</td><td>{{ c.data_source }}</td></tr>
+        {% else %}
+        <tr><td colspan="4">None.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Evidence not assessed — requires clinical input</h2>
+    {% for c in report.evidence_evaluation.criteria_not_assessed %}
+    <div class="not-assessed-box">
+      <strong>{{ c.code }}</strong> ({{ c.strength }}) — {{ c.evidence_basis }}
+      {% if c.notes %}<br><em>{{ c.notes }}</em>{% endif %}
+    </div>
+    {% else %}
+    <p style="color:var(--colour-muted);font-size:0.9rem;">No criteria required clinical input beyond standard review.</p>
+    {% endfor %}
+  </section>
+
+  <section>
+    <details class="audit-trail">
+      <summary>Audit trail — database queries and versions</summary>
+      <p style="font-size:0.85rem;"><strong>Database versions:</strong>
+        {% for name, version in report.audit_trail.database_versions.items() %}{{ name }}={{ version }}{{ ", " if not loop.last }}{% endfor %}
+      </p>
+      <table>
+        <thead><tr><th>Database</th><th>Query</th><th>Timestamp</th><th>Success</th></tr></thead>
+        <tbody>
+          {% for q in report.audit_trail.database_queries %}
+          <tr><td>{{ q.database }}</td><td>{{ q.query_description }}</td><td>{{ q.timestamp }}</td><td>{{ "yes" if q.success else "no: " + (q.error_message or "unknown error") }}</td></tr>
+          {% else %}
+          <tr><td colspan="4">No queries recorded.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </details>
+  </section>
+
+  <footer>
+    {{ report.clinical_disclaimer }}<br>
+    Report ID {{ report.metadata.report_id }} · Generated {{ report.metadata.generated_at }} ·
+    {% for name, version in report.audit_trail.database_versions.items() %}{{ name }}={{ version }}{{ " " if not loop.last }}{% endfor %}
+  </footer>
+
+</div>
+</body>
+</html>

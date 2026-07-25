@@ -91,7 +91,7 @@ def render_json_report(report: EvidenceReport, *, indent: int = 2) -> str:
     Returns:
         A formatted JSON string.
     """
-    return json.dumps(report_to_dict(report), indent=indent, sort_keys=False)
+    return json.dumps(report_to_dict(report), indent=indent, sort_keys=False, ensure_ascii=False)
 
 
 def write_json_report(report: EvidenceReport, output_path: str | Path) -> Path:

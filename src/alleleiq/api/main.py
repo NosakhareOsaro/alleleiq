@@ -9,6 +9,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from alleleiq.__version__ import VERSION
+from alleleiq.api.middleware import (
+    RateLimitMiddleware,
+    RequestContextMiddleware,
+    RequestSizeLimitMiddleware,
+)
 from alleleiq.api.routers import health, variants
 from alleleiq.config import get_settings
 from alleleiq.logging import configure_logging, get_logger
@@ -53,10 +58,22 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # Middleware order: CORS must be outermost so even error/rate-limited responses
+    # carry CORS headers, hence it is added last (Starlette applies the
+    # most-recently-added middleware first / outermost).
+    app.add_middleware(RequestContextMiddleware)
+    app.add_middleware(RateLimitMiddleware, limit_per_hour=settings.api_rate_limit_per_hour)
+    app.add_middleware(RequestSizeLimitMiddleware, max_bytes=settings.api_max_upload_bytes)
+
+    is_permissive_dev_cors = settings.api_cors_allow_origins == ["*"]
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.api_cors_allow_origins,
-        allow_credentials=True,
+        # Wildcard origins and credentialed CORS are mutually exclusive per the
+        # Fetch spec (browsers reject the combination); ALLELEIQ_API_CORS_ALLOW_ORIGINS=*
+        # is meant for permissive local development only, so credentials are disabled
+        # in that case rather than silently producing a header browsers ignore.
+        allow_credentials=not is_permissive_dev_cors,
         allow_methods=["GET", "POST"],
         allow_headers=["*"],
     )

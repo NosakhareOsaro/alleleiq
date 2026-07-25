@@ -71,12 +71,46 @@ def gnomad_no_data_response() -> dict[str, Any]:
     return _load_response_fixture("gnomad_no_data.json")
 
 
+def _load_vep_fixture(name: str) -> list[dict[str, Any]]:
+    with (RESPONSE_FIXTURES_DIR / name).open() as handle:
+        result: list[dict[str, Any]] = json.load(handle)
+        return result
+
+
 @pytest.fixture
 def vep_missense_response() -> list[dict[str, Any]]:
     """A realistic Ensembl VEP REST response for a BRCA1 missense variant."""
-    with (RESPONSE_FIXTURES_DIR / "vep_missense.json").open() as handle:
-        result: list[dict[str, Any]] = json.load(handle)
-        return result
+    return _load_vep_fixture("vep_missense.json")
+
+
+@pytest.fixture
+def vep_stop_gained_response() -> list[dict[str, Any]]:
+    """A VEP response for a BRCA1 nonsense (stop_gained) variant."""
+    return _load_vep_fixture("vep_stop_gained.json")
+
+
+@pytest.fixture
+def vep_splice_site_response() -> list[dict[str, Any]]:
+    """A VEP response for a canonical splice donor variant, with SpliceAI scores."""
+    return _load_vep_fixture("vep_splice_site.json")
+
+
+@pytest.fixture
+def vep_non_coding_response() -> list[dict[str, Any]]:
+    """A VEP response for an intergenic (non-coding) variant with no transcript consequences."""
+    return _load_vep_fixture("vep_non_coding.json")
+
+
+@pytest.fixture
+def clinvar_expert_panel_xml() -> str:
+    """A ClinVar VCV XML record: 3-star expert panel Pathogenic classification."""
+    return (RESPONSE_FIXTURES_DIR / "clinvar_expert_panel.xml").read_text()
+
+
+@pytest.fixture
+def clinvar_conflicting_xml() -> str:
+    """A ClinVar VCV XML record: 1-star conflicting-classifications submission."""
+    return (RESPONSE_FIXTURES_DIR / "clinvar_conflicting.xml").read_text()
 
 
 @pytest.fixture

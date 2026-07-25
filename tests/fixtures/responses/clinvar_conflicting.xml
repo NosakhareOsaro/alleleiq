@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<ClinVarResult-Set>
+  <VariationArchive VariationID="98765" VariationName="NM_000059.4(BRCA2):c.1234A&gt;G (p.Ile412Val)" Accession="VCV000098765" Version="4">
+    <ClassifiedRecord>
+      <Classifications>
+        <GermlineClassification DateLastEvaluated="2021-11-02">
+          <ReviewStatus>criteria provided, conflicting classifications</ReviewStatus>
+          <Description>Conflicting interpretations of pathogenicity</Description>
+        </GermlineClassification>
+      </Classifications>
+      <ClinicalAssertionList>
+        <ClinicalAssertion ID="10" />
+        <ClinicalAssertion ID="11" />
+      </ClinicalAssertionList>
+      <TraitSet>
+        <Trait>
+          <Name>
+            <ElementValue Type="Preferred">Hereditary breast and ovarian cancer syndrome</ElementValue>
+          </Name>
+        </Trait>
+      </TraitSet>
+    </ClassifiedRecord>
+  </VariationArchive>
+</ClinVarResult-Set>

@@ -1,0 +1,19 @@
+[
+  {
+    "input": "17 43125270 . G A . . .",
+    "id": ".",
+    "assembly_name": "GRCh38",
+    "seq_region_name": "17",
+    "start": 43125270,
+    "end": 43125270,
+    "allele_string": "G/A",
+    "most_severe_consequence": "intergenic_variant",
+    "colocated_variants": [],
+    "intergenic_consequences": [
+      {
+        "consequence_terms": ["intergenic_variant"],
+        "impact": "MODIFIER"
+      }
+    ]
+  }
+]

@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<ClinVarResult-Set>
+  <VariationArchive VariationID="17661" VariationName="NM_007294.4(BRCA1):c.5096G&gt;A (p.Arg1699Gln)" Accession="VCV000017661" Version="18">
+    <ClassifiedRecord>
+      <Classifications>
+        <GermlineClassification DateLastEvaluated="2023-06-15">
+          <ReviewStatus>reviewed by expert panel</ReviewStatus>
+          <Description>Pathogenic</Description>
+        </GermlineClassification>
+      </Classifications>
+      <ClinicalAssertionList>
+        <ClinicalAssertion ID="1" />
+        <ClinicalAssertion ID="2" />
+        <ClinicalAssertion ID="3" />
+      </ClinicalAssertionList>
+      <TraitSet>
+        <Trait>
+          <Name>
+            <ElementValue Type="Preferred">Hereditary breast and ovarian cancer syndrome</ElementValue>
+          </Name>
+        </Trait>
+      </TraitSet>
+    </ClassifiedRecord>
+  </VariationArchive>
+</ClinVarResult-Set>

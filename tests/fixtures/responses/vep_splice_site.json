@@ -1,0 +1,29 @@
+[
+  {
+    "input": "17 43091032 . T A . . .",
+    "id": ".",
+    "assembly_name": "GRCh38",
+    "seq_region_name": "17",
+    "start": 43091032,
+    "end": 43091032,
+    "allele_string": "T/A",
+    "most_severe_consequence": "splice_donor_variant",
+    "colocated_variants": [],
+    "transcript_consequences": [
+      {
+        "transcript_id": "ENST00000357654",
+        "gene_id": "ENSG00000012048",
+        "gene_symbol": "BRCA1",
+        "canonical": 1,
+        "mane_select": "NM_007294.4",
+        "biotype": "protein_coding",
+        "consequence_terms": ["splice_donor_variant"],
+        "hgvsc": "ENST00000357654.9:c.4986+1T>A",
+        "hgvsp": null,
+        "impact": "HIGH",
+        "exon": "16/23",
+        "spliceai": {"DS_AG": 0.02, "DS_AL": 0.01, "DS_DG": 0.01, "DS_DL": 0.91}
+      }
+    ]
+  }
+]

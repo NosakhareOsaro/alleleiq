@@ -1,0 +1,28 @@
+[
+  {
+    "input": "17 43093157 . C A . . .",
+    "id": "rs786201057",
+    "assembly_name": "GRCh38",
+    "seq_region_name": "17",
+    "start": 43093157,
+    "end": 43093157,
+    "allele_string": "C/A",
+    "most_severe_consequence": "stop_gained",
+    "colocated_variants": [{"id": "rs786201057", "clin_sig": ["pathogenic"]}],
+    "transcript_consequences": [
+      {
+        "transcript_id": "ENST00000357654",
+        "gene_id": "ENSG00000012048",
+        "gene_symbol": "BRCA1",
+        "canonical": 1,
+        "mane_select": "NM_007294.4",
+        "biotype": "protein_coding",
+        "consequence_terms": ["stop_gained"],
+        "hgvsc": "ENST00000357654.9:c.5211C>A",
+        "hgvsp": "ENSP00000350283.3:p.Tyr1737Ter",
+        "impact": "HIGH",
+        "exon": "19/23"
+      }
+    ]
+  }
+]

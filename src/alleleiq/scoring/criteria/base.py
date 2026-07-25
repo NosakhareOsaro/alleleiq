@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import ClassVar
+from typing import ClassVar, Literal
 
 from alleleiq.clients.clinvar import ClinVarSubmission
 from alleleiq.clients.gnomad import GeneConstraint
@@ -44,6 +44,13 @@ class CriterionContext:
     vep_annotation: VEPAnnotation | None = None
     gene_constraint: GeneConstraint | None = None
     clinvar_submission: ClinVarSubmission | None = None
+    inheritance_mode: Literal["dominant", "recessive"] | None = field(
+        default=None,
+        metadata={
+            "description": "Disease inheritance pattern, required for BS1's "
+            "disease-specific frequency threshold. None if not supplied by the caller."
+        },
+    )
     settings: Settings = field(default_factory=get_settings)
 
 

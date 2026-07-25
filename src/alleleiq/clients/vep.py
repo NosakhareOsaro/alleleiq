@@ -61,6 +61,9 @@ class VEPAnnotation(BaseModel):
     is_mane_select: bool = False
     hgvs_c: str | None = None
     hgvs_p: str | None = None
+    exon: str | None = Field(
+        default=None, description="Exon position as reported by VEP, e.g. '18/23'."
+    )
     revel_score: float | None = None
     spliceai_ds_ag: float | None = None
     spliceai_ds_al: float | None = None
@@ -196,6 +199,7 @@ class VEPClient(BaseClient):
             is_mane_select=bool(primary.get("mane_select")) if primary else False,
             hgvs_c=primary.get("hgvsc") if primary else None,
             hgvs_p=primary.get("hgvsp") if primary else None,
+            exon=primary.get("exon") if primary else None,
             revel_score=revel_score,
             spliceai_ds_ag=spliceai.get("DS_AG"),
             spliceai_ds_al=spliceai.get("DS_AL"),

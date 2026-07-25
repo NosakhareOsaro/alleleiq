@@ -72,9 +72,9 @@ class BaseClient(ABC):
 
     async def __aexit__(
         self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback: TracebackType | None,
+        _exc_type: type[BaseException] | None,
+        _exc_value: BaseException | None,
+        _traceback: TracebackType | None,
     ) -> None:
         if self._client is not None:
             await self._client.aclose()

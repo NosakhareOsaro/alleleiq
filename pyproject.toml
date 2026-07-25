@@ -1,0 +1,128 @@
+[project]
+name = "alleleiq"
+version = "0.1.0-alpha"
+description = "Population-inclusive clinical genomic variant interpretation platform: evidence aggregation and ACMG/AMP scoring in support of clinical genetic scientist review."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "Nosakhare Osaro", email = "osaronosakhare@gmail.com" },
+]
+keywords = [
+    "genomics",
+    "clinical-informatics",
+    "acmg",
+    "variant-interpretation",
+    "bioinformatics",
+    "health-equity",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Healthcare Industry",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+]
+
+dependencies = [
+    "pydantic>=2.7,<3",
+    "pydantic-settings>=2.3,<3",
+    "fastapi>=0.111,<1",
+    "uvicorn[standard]>=0.30,<1",
+    "click>=8.1,<9",
+    "rich>=13.7,<14",
+    "httpx>=0.27,<1",
+    "tenacity>=8.4,<9",
+    "cyvcf2>=0.31,<1",
+    "pysam>=0.22,<1",
+    "jinja2>=3.1,<4",
+    "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2,<9",
+    "pytest-asyncio>=0.23,<1",
+    "pytest-cov>=5.0,<6",
+    "pytest-snapshot>=0.9,<1",
+    "black>=24.4,<25",
+    "ruff>=0.5,<1",
+    "mypy>=1.10,<2",
+    "pre-commit>=3.7,<4",
+    "mkdocs>=1.6,<2",
+    "mkdocs-material>=9.5,<10",
+    "bandit>=1.7,<2",
+    "pip-audit>=2.7,<3",
+    "types-jinja2",
+]
+
+[project.urls]
+Homepage = "https://github.com/NosakhareOsaro/alleleiq"
+Repository = "https://github.com/NosakhareOsaro/alleleiq"
+Issues = "https://github.com/NosakhareOsaro/alleleiq/issues"
+Documentation = "https://github.com/NosakhareOsaro/alleleiq/tree/main/docs"
+
+[project.scripts]
+alleleiq = "alleleiq.cli:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/alleleiq"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/alleleiq/reports/templates" = "alleleiq/reports/templates"
+
+[tool.black]
+line-length = 100
+target-version = ["py311", "py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "RUF", "ASYNC", "S",
+]
+ignore = [
+    "S101", # asserts are expected in tests
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S105", "S106"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["alleleiq"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+plugins = ["pydantic.mypy"]
+exclude = ["tests/fixtures", "build", "dist"]
+
+[[tool.mypy.overrides]]
+module = ["cyvcf2.*", "pysam.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "--cov=alleleiq --cov-report=term-missing --cov-report=xml"
+
+[tool.coverage.run]
+source = ["src/alleleiq"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]

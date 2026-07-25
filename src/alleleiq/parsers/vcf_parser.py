@@ -250,7 +250,11 @@ def _verify_genome_build(vcf_reader: VCF, expected_build: GenomeBuild, path: Pat
             )
         return True
 
-    fingerprinted = _fingerprint_build_from_contigs(vcf_reader.seqnames, vcf_reader.seqlens)
+    try:
+        seqlens = vcf_reader.seqlens
+    except AttributeError:
+        seqlens = None
+    fingerprinted = _fingerprint_build_from_contigs(vcf_reader.seqnames, seqlens)
     if fingerprinted is not None:
         if fingerprinted != expected_build:
             raise VariantParseError(

@@ -130,7 +130,10 @@ class BS1Criterion(CriterionEvaluator):
                 ),
                 data_source=_DATA_SOURCE,
                 requires_clinical_input=True,
-                notes="Supply inheritance_mode ('dominant' or 'recessive') to enable automated BS1 assessment.",
+                notes=(
+                    "Supply inheritance_mode ('dominant' or 'recessive') to enable "
+                    "automated BS1 assessment."
+                ),
             )
 
         threshold = (

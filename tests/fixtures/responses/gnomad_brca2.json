@@ -1,0 +1,43 @@
+{
+  "data": {
+    "variant": {
+      "variant_id": "13-32340301-T-C",
+      "chrom": "13",
+      "pos": 32340301,
+      "ref": "T",
+      "alt": "C",
+      "genome": {
+        "ac": 42,
+        "an": 152180,
+        "ac_hom": 0,
+        "filters": [],
+        "populations": [
+          {"id": "afr", "ac": 8, "an": 41438, "ac_hom": 0},
+          {"id": "amr", "ac": 3, "an": 15288, "ac_hom": 0},
+          {"id": "asj", "ac": 0, "an": 5074, "ac_hom": 0},
+          {"id": "eas", "ac": 1, "an": 19952, "ac_hom": 0},
+          {"id": "fin", "ac": 2, "an": 12074, "ac_hom": 0},
+          {"id": "nfe", "ac": 26, "an": 68034, "ac_hom": 0},
+          {"id": "sas", "ac": 0, "an": 0, "ac_hom": 0},
+          {"id": "oth", "ac": 2, "an": 2320, "ac_hom": 0}
+        ]
+      },
+      "exome": {
+        "ac": 51,
+        "an": 251394,
+        "ac_hom": 0,
+        "filters": [],
+        "populations": [
+          {"id": "afr", "ac": 10, "an": 41398, "ac_hom": 0},
+          {"id": "amr", "ac": 4, "an": 30618, "ac_hom": 0},
+          {"id": "asj", "ac": 0, "an": 10088, "ac_hom": 0},
+          {"id": "eas", "ac": 1, "an": 39312, "ac_hom": 0},
+          {"id": "fin", "ac": 2, "an": 21200, "ac_hom": 0},
+          {"id": "nfe", "ac": 30, "an": 90230, "ac_hom": 0},
+          {"id": "sas", "ac": 2, "an": 15308, "ac_hom": 0},
+          {"id": "oth", "ac": 2, "an": 3240, "ac_hom": 0}
+        ]
+      }
+    }
+  }
+}

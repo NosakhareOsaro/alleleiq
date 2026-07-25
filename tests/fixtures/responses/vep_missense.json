@@ -1,0 +1,47 @@
+[
+  {
+    "input": "17 43094692 . G A . . .",
+    "id": "rs80357382",
+    "assembly_name": "GRCh38",
+    "seq_region_name": "17",
+    "start": 43094692,
+    "end": 43094692,
+    "allele_string": "G/A",
+    "most_severe_consequence": "missense_variant",
+    "colocated_variants": [
+      {
+        "id": "rs80357382",
+        "clin_sig": ["pathogenic"],
+        "clin_sig_allele": "A:pathogenic"
+      }
+    ],
+    "transcript_consequences": [
+      {
+        "transcript_id": "ENST00000357654",
+        "gene_id": "ENSG00000012048",
+        "gene_symbol": "BRCA1",
+        "canonical": 1,
+        "mane_select": "NM_007294.4",
+        "biotype": "protein_coding",
+        "consequence_terms": ["missense_variant"],
+        "hgvsc": "ENST00000357654.9:c.5096G>A",
+        "hgvsp": "ENSP00000350283.3:p.Arg1699Gln",
+        "impact": "MODERATE",
+        "exon": "18/23",
+        "polyphen_score": 0.997,
+        "polyphen_prediction": "probably_damaging",
+        "sift_score": 0.0,
+        "sift_prediction": "deleterious",
+        "dbnsfp": {
+          "REVEL_score": "0.912"
+        },
+        "spliceai": {
+          "DS_AG": 0.01,
+          "DS_AL": 0.0,
+          "DS_DG": 0.02,
+          "DS_DL": 0.0
+        }
+      }
+    ]
+  }
+]

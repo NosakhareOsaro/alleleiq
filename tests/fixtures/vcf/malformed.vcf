@@ -1,0 +1,5 @@
+##fileformat=VCFv4.2
+##reference=GRCh38
+##contig=<ID=17,length=83257441>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+17	not_a_position	.	G	A	100	PASS	.

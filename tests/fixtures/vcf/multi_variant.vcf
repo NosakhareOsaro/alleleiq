@@ -1,0 +1,10 @@
+##fileformat=VCFv4.2
+##reference=GRCh38
+##contig=<ID=13,length=114364328>
+##contig=<ID=17,length=83257441>
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele count in genotypes">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total number of alleles in called genotypes">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+13	32340301	rs81002813	T	C	100	PASS	AC=1;AN=2
+17	43094692	rs80357382	G	A,T	100	PASS	AC=1,1;AN=2
+17	43104120	.	AG	A	100	PASS	AC=1;AN=2

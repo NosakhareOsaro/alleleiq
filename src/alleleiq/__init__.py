@@ -25,7 +25,6 @@ from alleleiq.exceptions import (
 __version__ = VERSION
 
 __all__ = [
-    "__version__",
     "AlleleIQError",
     "ClinVarError",
     "ConfigurationError",
@@ -34,6 +33,7 @@ __all__ = [
     "InsufficientEvidenceError",
     "ReportGenerationError",
     "ScoringError",
-    "VariantParseError",
     "VEPError",
+    "VariantParseError",
+    "__version__",
 ]

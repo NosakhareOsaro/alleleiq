@@ -1,8 +1,29 @@
 name: Release
 
+# Manually triggered rather than "on: push to main". Two things were
+# learned the hard way running this automatically on this project's very
+# first push, both worth knowing before re-enabling an automatic trigger:
+#
+# 1. python-semantic-release's tag parser only recognises prerelease tags
+#    in the form `-<token>.<number>` (e.g. `v0.1.0-alpha.0`), not
+#    `v0.1.0-alpha`. A tag in the wrong format is silently treated as
+#    unparseable, and with *no* parseable tag in the repo, the tool's
+#    documented default is to treat the very next release as `1.0.0` —
+#    regardless of the version string already in pyproject.toml or
+#    __version__.py. That is exactly what happened: a public v1.0.0
+#    GitHub release got published for what was actually 0.1.0-alpha
+#    software, which was deleted and recreated as v0.1.0-alpha.0.
+# 2. Even with a correctly formatted prerelease tag as a baseline, once
+#    there are `feat:` commits since that tag, the tool's default is to
+#    compute the *next* version as a full stable release (graduating out
+#    of prerelease), not the next alpha increment. Whether to graduate to
+#    1.0.0 or stay on the alpha track (`--prerelease` /
+#    `--prerelease-token alpha`) is a real product decision about
+#    version-stability commitment, not something this workflow should
+#    make silently on your behalf — decide it deliberately when you
+#    trigger this from the Actions tab.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch: {}
 
 permissions:
   contents: write
@@ -27,15 +48,22 @@ jobs:
       - name: Install python-semantic-release
         run: pip install python-semantic-release
 
-      - name: Determine version bump and publish GitHub release
+      - name: Determine whether a release is due
+        id: check
+        run: |
+          echo "last_released=$(semantic-release version --print-last-released)" >> "$GITHUB_OUTPUT"
+          echo "next=$(semantic-release version --print)" >> "$GITHUB_OUTPUT"
+
+      - name: Create release and publish artifacts
         id: release
+        if: steps.check.outputs.last_released != steps.check.outputs.next
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           semantic-release version
-          echo "released=$(semantic-release version --print-tag > /dev/null 2>&1 && echo true || echo false)" >> "$GITHUB_OUTPUT"
-          echo "version=$(semantic-release version --print)" >> "$GITHUB_OUTPUT"
           semantic-release publish
+          echo "released=true" >> "$GITHUB_OUTPUT"
+          echo "version=${{ steps.check.outputs.next }}" >> "$GITHUB_OUTPUT"
 
   docker:
     name: Build and push Docker image to GHCR

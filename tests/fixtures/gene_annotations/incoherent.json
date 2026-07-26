@@ -1,0 +1,14 @@
+{
+  "BOTHGENE": {
+    "pp2_applicable": true,
+    "bp1_applicable": true,
+    "mechanism": "mixed",
+    "source": "Fake gene: fixture source for the pp2+bp1-both-true rejection test."
+  },
+  "GOODGENE": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_gain_of_function",
+    "source": "Fake gene: valid sibling entry, should still load."
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "PP2GENE": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_gain_of_function",
+    "source": "Fake gene: fixture source for PP2 tests."
+  },
+  "BP1GENE": {
+    "pp2_applicable": false,
+    "bp1_applicable": true,
+    "mechanism": "loss_of_function_only",
+    "source": "Fake gene: fixture source for BP1 tests."
+  }
+}

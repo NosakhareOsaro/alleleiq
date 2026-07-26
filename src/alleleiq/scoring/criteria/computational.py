@@ -10,6 +10,11 @@ limited to variants VEP labels as splice-region), so it is always
 considered when present. Only when *neither* score is available at all
 does the criterion have no computational signal to evaluate, which is
 when ``requires_clinical_input`` is set unconditionally.
+
+The REVEL score itself is resolved by :class:`~alleleiq.clients.revel.REVELClient`
+(local tabix index, preferred, falling back to VEP REST) rather than
+read directly off the VEP annotation, since VEP's own REVEL coverage is
+incomplete — see :func:`_resolve_revel_score`.
 """
 
 from __future__ import annotations
@@ -18,8 +23,22 @@ from alleleiq.models.evidence import ACMGCode, CriterionEvaluation, EvidenceStre
 
 from .base import CriterionContext, CriterionEvaluator
 
-_DATA_SOURCE = "Ensembl VEP (REVEL / SpliceAI)"
+_DATA_SOURCE = "REVEL (local index / VEP REST) / Ensembl VEP (SpliceAI)"
 _MISSENSE_CONSEQUENCE = "missense_variant"
+
+
+def _resolve_revel_score(context: CriterionContext) -> float | None:
+    """The REVEL score to use, preferring REVELClient's result over the raw VEP annotation.
+
+    ``context.revel_score`` is populated by the pipeline via
+    :class:`~alleleiq.clients.revel.REVELClient`, which already
+    incorporates the VEP-REST fallback; ``vep_annotation.revel_score`` is
+    used directly only when a caller builds a :class:`CriterionContext`
+    without going through REVELClient (e.g. existing unit tests).
+    """
+    if context.revel_score is not None:
+        return context.revel_score
+    return context.vep_annotation.revel_score if context.vep_annotation else None
 
 
 def _max_spliceai_delta(vep_annotation: object) -> float | None:
@@ -47,7 +66,7 @@ class PP3Criterion(CriterionEvaluator):
 
     def _evaluate(self, context: CriterionContext) -> CriterionEvaluation:
         annotation = context.vep_annotation
-        revel = annotation.revel_score if annotation else None
+        revel = _resolve_revel_score(context)
         spliceai_max = _max_spliceai_delta(annotation)
         consequence = annotation.most_severe_consequence if annotation else None
         is_missense = consequence == _MISSENSE_CONSEQUENCE
@@ -115,7 +134,7 @@ class BP4Criterion(CriterionEvaluator):
 
     def _evaluate(self, context: CriterionContext) -> CriterionEvaluation:
         annotation = context.vep_annotation
-        revel = annotation.revel_score if annotation else None
+        revel = _resolve_revel_score(context)
         spliceai_max = _max_spliceai_delta(annotation)
         consequence = annotation.most_severe_consequence if annotation else None
         is_missense = consequence == _MISSENSE_CONSEQUENCE

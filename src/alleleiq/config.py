@@ -54,6 +54,17 @@ class Settings(BaseSettings):
     vep_timeout_seconds: float = Field(default=30.0, gt=0)
     vep_max_retries: int = Field(default=3, ge=0)
 
+    # ── Local REVEL tabix lookup ──────────────────────────────────────
+    revel_data_path: str | None = Field(
+        default=None,
+        description=(
+            "Path to a bgzipped, tabix-indexed REVEL scores TSV (see "
+            "scripts/download_revel.sh). Optional: PP3/BP4 fall back to "
+            "VEP REST's REVEL score, then to requires_clinical_input, "
+            "when unset or the file is absent."
+        ),
+    )
+
     # ── ClinVar (NCBI E-utilities) client ────────────────────────────
     clinvar_api_url: str = Field(default="https://eutils.ncbi.nlm.nih.gov/entrez/eutils")
     clinvar_api_key: str | None = Field(default=None)

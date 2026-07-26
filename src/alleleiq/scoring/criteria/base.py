@@ -44,6 +44,16 @@ class CriterionContext:
     vep_annotation: VEPAnnotation | None = None
     gene_constraint: GeneConstraint | None = None
     clinvar_submission: ClinVarSubmission | None = None
+    revel_score: float | None = field(
+        default=None,
+        metadata={
+            "description": "REVEL score resolved by REVELClient (local tabix index, "
+            "preferred, or VEP REST fallback). Takes precedence over "
+            "vep_annotation.revel_score for PP3/BP4 when set; falls back to "
+            "vep_annotation.revel_score when REVELClient was not consulted."
+        },
+    )
+    revel_source: str | None = None
     inheritance_mode: Literal["dominant", "recessive"] | None = field(
         default=None,
         metadata={

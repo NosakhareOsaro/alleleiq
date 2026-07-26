@@ -16,6 +16,7 @@ from datetime import UTC, datetime
 from alleleiq.__version__ import VERSION
 from alleleiq.clients.clinvar import ClinVarClient, ClinVarSubmission
 from alleleiq.clients.gnomad import GeneConstraint, GnomADClient
+from alleleiq.clients.revel import REVELClient
 from alleleiq.clients.vep import VEPAnnotation, VEPClient
 from alleleiq.config import Settings, get_settings
 from alleleiq.exceptions import AlleleIQError
@@ -188,6 +189,51 @@ async def _fetch_clinvar(
         return None
 
 
+async def _fetch_revel(
+    variant: Variant,
+    vep_annotation: VEPAnnotation | None,
+    settings: Settings,
+    queries: list[DatabaseQueryRecord],
+) -> tuple[float | None, str | None]:
+    """Resolve a REVEL score via REVELClient, recording the outcome in the audit trail.
+
+    ``vep_annotation`` is passed through so REVELClient's VEP fallback
+    reuses the annotation already fetched by :func:`_fetch_gnomad_and_vep`
+    instead of issuing a second VEP request.
+    """
+    started_at = datetime.now(UTC)
+    client = REVELClient(settings)
+    try:
+        result = await client.get_score(variant.coordinates, vep_annotation=vep_annotation)
+        queries.append(
+            DatabaseQueryRecord(
+                database="REVEL",
+                query_description=f"get_score (source={result.source})",
+                parameters={"variant_id": variant.variant_id},
+                timestamp=started_at,
+                success=True,
+            )
+        )
+        return result.score, result.source
+    except AlleleIQError as exc:
+        queries.append(
+            DatabaseQueryRecord(
+                database="REVEL",
+                query_description="get_score",
+                parameters={"variant_id": variant.variant_id},
+                timestamp=started_at,
+                success=False,
+                error_message=str(exc),
+            )
+        )
+        logger.warning(
+            "REVEL lookup failed", extra={"variant_id": variant.variant_id, "error": str(exc)}
+        )
+        return None, None
+    finally:
+        client.close()
+
+
 def _merge_vep_into_variant(variant: Variant, vep_annotation: VEPAnnotation | None) -> Variant:
     """Fill in gene/transcript/HGVS/consequence from VEP if the parsed variant lacked them."""
     if vep_annotation is None:
@@ -235,6 +281,8 @@ async def build_evidence_report(
     if include_clinvar:
         clinvar_submission = await _fetch_clinvar(variant, vep_annotation, settings, queries)
 
+    revel_score, revel_source = await _fetch_revel(variant, vep_annotation, settings, queries)
+
     variant = _merge_vep_into_variant(variant, vep_annotation)
     coverage_gaps, coverage_summary = assess_coverage(population_frequencies, settings)
 
@@ -245,6 +293,8 @@ async def build_evidence_report(
         vep_annotation=vep_annotation,
         gene_constraint=gene_constraint,
         clinvar_submission=clinvar_submission,
+        revel_score=revel_score,
+        revel_source=revel_source,
         settings=settings,
     )
 

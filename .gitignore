@@ -76,3 +76,12 @@ site/
 
 # Distribution / packaging caches
 .uv-cache/
+
+# Locally-built REVEL lookup data (see scripts/download_revel.sh). Too
+# large for a git repo (the bgzipped index alone exceeds GitHub's 100MB
+# per-file limit) — small test fixtures live in tests/fixtures/revel/
+# instead. Scoped to the REVEL artifacts specifically, not all of data/,
+# since other data/ subdirectories (e.g. data/clingen/) bundle real,
+# git-sized reference datasets directly.
+data/revel_v1.3_all_chromosomes.tsv.gz
+data/revel_v1.3_all_chromosomes.tsv.gz.tbi

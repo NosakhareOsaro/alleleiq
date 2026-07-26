@@ -104,6 +104,13 @@ uv run alleleiq analyse path/to/variants.vcf --output-dir ./reports
 make run-api
 ```
 
+REVEL scores (used by `PP3`/`BP4`) are looked up from a local
+tabix-indexed file if configured, falling back to VEP REST's partial
+coverage otherwise. The download is optional but strongly recommended
+for complete PP3/BP4 scoring — see
+[`docs/guides/getting-started.md`](docs/guides/getting-started.md) and
+`scripts/download_revel.sh`.
+
 ## CLI reference
 
 ```

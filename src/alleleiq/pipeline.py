@@ -15,7 +15,7 @@ from datetime import UTC, datetime
 
 from alleleiq.__version__ import VERSION
 from alleleiq.clients.clingen import ClinGenClient
-from alleleiq.clients.clinvar import ClinVarClient, ClinVarSubmission
+from alleleiq.clients.clinvar import ClinVarClient, ClinVarPositionalMatch, ClinVarSubmission
 from alleleiq.clients.gnomad import GeneConstraint, GnomADClient
 from alleleiq.clients.revel import REVELClient
 from alleleiq.clients.vep import VEPAnnotation, VEPClient
@@ -32,6 +32,7 @@ from alleleiq.scoring.criteria.base import CriterionContext, CriterionEvaluator
 from alleleiq.scoring.criteria.computational import BP4Criterion, PP3Criterion
 from alleleiq.scoring.criteria.lof import PVS1Criterion
 from alleleiq.scoring.criteria.population_frequency import BA1Criterion, BS1Criterion, PM2Criterion
+from alleleiq.scoring.criteria.same_position import PM5Criterion, PS1Criterion
 
 logger = get_logger(__name__)
 
@@ -42,6 +43,8 @@ _EVALUATORS: tuple[CriterionEvaluator, ...] = (
     PP3Criterion(),
     BP4Criterion(),
     PVS1Criterion(),
+    PS1Criterion(),
+    PM5Criterion(),
 )
 
 
@@ -235,6 +238,59 @@ async def _fetch_revel(
         client.close()
 
 
+async def _fetch_same_position_matches(
+    variant: Variant,
+    vep_annotation: VEPAnnotation | None,
+    settings: Settings,
+    queries: list[DatabaseQueryRecord],
+) -> list[ClinVarPositionalMatch]:
+    """Resolve same-position ClinVar matches for PS1/PM5.
+
+    Skipped (no network call) when VEP has no protein-level change for
+    this variant, since PS1/PM5 cannot use the result either way in
+    that case — see :mod:`alleleiq.scoring.criteria.same_position`.
+    """
+    if vep_annotation is None or not vep_annotation.hgvs_p:
+        return []
+
+    window = settings.same_position_window_bp
+    start = max(1, variant.coordinates.pos - window)
+    end = variant.coordinates.pos + window
+
+    started_at = datetime.now(UTC)
+    try:
+        async with ClinVarClient(settings) as clinvar_client:
+            matches = await clinvar_client.search_same_position(
+                chrom=variant.coordinates.chrom, start=start, end=end
+            )
+        queries.append(
+            DatabaseQueryRecord(
+                database="ClinVar",
+                query_description="search_same_position",
+                parameters={"variant_id": variant.variant_id, "window_bp": str(window)},
+                timestamp=started_at,
+                success=True,
+            )
+        )
+        return matches
+    except AlleleIQError as exc:
+        queries.append(
+            DatabaseQueryRecord(
+                database="ClinVar",
+                query_description="search_same_position",
+                parameters={"variant_id": variant.variant_id, "window_bp": str(window)},
+                timestamp=started_at,
+                success=False,
+                error_message=str(exc),
+            )
+        )
+        logger.warning(
+            "ClinVar same-position search failed",
+            extra={"variant_id": variant.variant_id, "error": str(exc)},
+        )
+        return []
+
+
 def _resolve_clingen(
     gene_symbol: str | None,
     settings: Settings,
@@ -314,8 +370,12 @@ async def build_evidence_report(
     )
 
     clinvar_submission = None
+    same_position_matches: list[ClinVarPositionalMatch] = []
     if include_clinvar:
         clinvar_submission = await _fetch_clinvar(variant, vep_annotation, settings, queries)
+        same_position_matches = await _fetch_same_position_matches(
+            variant, vep_annotation, settings, queries
+        )
 
     revel_score, revel_source = await _fetch_revel(variant, vep_annotation, settings, queries)
 
@@ -336,6 +396,7 @@ async def build_evidence_report(
         vep_annotation=vep_annotation,
         gene_constraint=gene_constraint,
         clinvar_submission=clinvar_submission,
+        same_position_clinvar_matches=same_position_matches,
         revel_score=revel_score,
         revel_source=revel_source,
         clingen_classification=clingen_classification,

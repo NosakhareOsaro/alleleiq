@@ -17,7 +17,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import ClassVar, Literal
 
-from alleleiq.clients.clinvar import ClinVarSubmission
+from alleleiq.clients.clinvar import ClinVarPositionalMatch, ClinVarSubmission
 from alleleiq.clients.gnomad import GeneConstraint
 from alleleiq.clients.vep import VEPAnnotation
 from alleleiq.config import Settings, get_settings
@@ -44,6 +44,15 @@ class CriterionContext:
     vep_annotation: VEPAnnotation | None = None
     gene_constraint: GeneConstraint | None = None
     clinvar_submission: ClinVarSubmission | None = None
+    same_position_clinvar_matches: list[ClinVarPositionalMatch] = field(
+        default_factory=list,
+        metadata={
+            "description": "Classified ClinVar records within settings.same_position_window_bp "
+            "of this variant's genomic position, resolved by ClinVarClient.search_same_position. "
+            "Consumed by PS1/PM5 (see alleleiq.scoring.criteria.same_position). Empty if not "
+            "consulted (e.g. ClinVar disabled) or if ClinVar has no classified records nearby."
+        },
+    )
     revel_score: float | None = field(
         default=None,
         metadata={

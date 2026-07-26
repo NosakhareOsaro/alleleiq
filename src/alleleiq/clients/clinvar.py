@@ -18,7 +18,9 @@ so schema drift degrades gracefully instead of crashing the pipeline.
 
 from __future__ import annotations
 
+import re
 from datetime import date
+from typing import TypedDict
 from xml.etree.ElementTree import Element
 
 import httpx
@@ -49,6 +51,18 @@ _REVIEW_STATUS_STAR_RATING: dict[str, int] = {
 }
 
 
+class _ClassificationFields(TypedDict):
+    """Fields shared by :class:`ClinVarSubmission` and :class:`ClinVarPositionalMatch`."""
+
+    accession: str
+    clinical_significance: str
+    review_status: str
+    star_rating: int
+    submitter_count: int
+    condition: str | None
+    last_evaluated: date | None
+
+
 class ClinVarSubmission(BaseModel):
     """A ClinVar record's classification summary for one variant."""
 
@@ -61,6 +75,32 @@ class ClinVarSubmission(BaseModel):
     submitter_count: int
     condition: str | None = None
     last_evaluated: date | None = None
+
+
+# ClinVar's ``VariationName`` embeds the protein change parenthetically, e.g.
+# "NM_007294.4(BRCA1):c.5096G>A (p.Arg1699Gln)"; this also matches VEP's
+# transcript-prefixed HGVSp form ("ENSP00000269305.4:p.Arg175His").
+_PROTEIN_CHANGE_PATTERN = re.compile(r"p\.([A-Za-z0-9_*=]+)")
+
+
+class ClinVarPositionalMatch(ClinVarSubmission):
+    """A classified ClinVar record found near a queried genomic position.
+
+    Used by the PS1/PM5 (same-position pathogenicity) criteria — see
+    :mod:`alleleiq.scoring.criteria.same_position` — to compare this
+    variant's amino-acid change against other classified variants at or
+    near the same position, something a single-variant lookup by rsID or
+    HGVS (:meth:`ClinVarClient.fetch_classification`) cannot answer.
+    """
+
+    variation_name: str = Field(description="ClinVar's ``VariationName``, e.g. the HGVS summary.")
+    protein_change: str | None = Field(
+        default=None,
+        description="Bare protein-change token extracted from variation_name, e.g. 'Arg175His'.",
+    )
+    genomic_position: int | None = Field(
+        default=None, description="GRCh38 VCF-style position, if reported by ClinVar."
+    )
 
 
 class ClinVarClient(BaseClient):
@@ -116,6 +156,63 @@ class ClinVarClient(BaseClient):
             logger.info("no ClinVar record found", extra={"had_rsid": rsid is not None})
             return None
         return await self._efetch(uid)
+
+    async def search_same_position(
+        self, *, chrom: str, start: int, end: int, max_hits: int = 20
+    ) -> list[ClinVarPositionalMatch]:
+        """Search ClinVar for classified variants overlapping a genomic position window.
+
+        Used by the PS1/PM5 same-position criteria to find other
+        classified variants near this one, so their amino-acid changes
+        can be compared. Queries NCBI's documented ``chrpos38`` genomic
+        position field (GRCh38-only, matching AlleleIQ's own scope) —
+        not the informal "position[Genomic Location]" field name
+        sometimes seen in casual descriptions of ClinVar search, which
+        is not a real Entrez field.
+
+        Args:
+            chrom: Chromosome without a 'chr' prefix, e.g. '17'.
+            start: Inclusive GRCh38 range start (1-based, VCF convention).
+            end: Inclusive GRCh38 range end.
+            max_hits: Maximum number of ClinVar records to fetch details
+                for, bounding both the esearch page size and the
+                subsequent batch efetch request.
+
+        Returns:
+            Classified matches in the window, each with clinical
+            significance, star rating, and (when parseable) the protein
+            change. Empty if nothing is classified in the window — a
+            legitimate outcome, not an error.
+
+        Raises:
+            ClinVarError: On a network failure or malformed response.
+        """
+        term = f"{chrom}[chr] AND {start}:{end}[chrpos38]"
+        try:
+            response = await self._request(
+                "GET",
+                "/esearch.fcgi",
+                params=self._with_auth(
+                    {
+                        "db": "clinvar",
+                        "term": term,
+                        "retmode": "json",
+                        "retmax": str(max_hits),
+                    }
+                ),
+            )
+        except httpx.HTTPError as exc:
+            raise ClinVarError(f"ClinVar positional esearch failed: {exc}") from exc
+
+        try:
+            body = response.json()
+        except ValueError as exc:
+            raise ClinVarError("ClinVar positional esearch returned a non-JSON response") from exc
+
+        uids = body.get("esearchresult", {}).get("idlist", [])
+        if not uids:
+            return []
+        return await self._efetch_many(uids)
 
     async def health_check(self) -> bool:
         """Check NCBI E-utilities reachability via a minimal esearch call."""
@@ -179,12 +276,64 @@ class ClinVarClient(BaseClient):
 
         return self._parse_variation_archive(root)
 
-    @staticmethod
-    def _parse_variation_archive(root: Element) -> ClinVarSubmission | None:
+    async def _efetch_many(self, uids: list[str]) -> list[ClinVarPositionalMatch]:
+        """Batch-fetch classification details for multiple ClinVar UIDs in one request."""
+        try:
+            response = await self._request(
+                "GET",
+                "/efetch.fcgi",
+                params=self._with_auth(
+                    {
+                        "db": "clinvar",
+                        "id": ",".join(uids),
+                        "rettype": "vcv",
+                        "is_variationid": "true",
+                    }
+                ),
+            )
+        except httpx.HTTPError as exc:
+            raise ClinVarError(f"ClinVar batch efetch failed: {exc}") from exc
+
+        try:
+            root = ElementTree.fromstring(response.text)
+        except ParseError as exc:
+            raise ClinVarError("ClinVar batch efetch returned malformed XML") from exc
+
+        matches = []
+        for archive in root.findall(".//VariationArchive"):
+            match = self._parse_positional_archive(archive)
+            if match is not None:
+                matches.append(match)
+        return matches
+
+    @classmethod
+    def _parse_variation_archive(cls, root: Element) -> ClinVarSubmission | None:
         archive = root if root.tag == "VariationArchive" else root.find(".//VariationArchive")
         if archive is None:
             return None
+        fields = cls._extract_classification_fields(archive)
+        if fields is None:
+            return None
+        return ClinVarSubmission(**fields)
 
+    @classmethod
+    def _parse_positional_archive(cls, archive: Element) -> ClinVarPositionalMatch | None:
+        fields = cls._extract_classification_fields(archive)
+        if fields is None:
+            return None
+        variation_name = archive.get("VariationName") or ""
+        protein_match = _PROTEIN_CHANGE_PATTERN.search(variation_name)
+        genomic_position = cls._extract_grch38_position(archive)
+        return ClinVarPositionalMatch(
+            **fields,
+            variation_name=variation_name,
+            protein_change=protein_match.group(1) if protein_match else None,
+            genomic_position=genomic_position,
+        )
+
+    @staticmethod
+    def _extract_classification_fields(archive: Element) -> _ClassificationFields | None:
+        """Fields shared by both single-record and positional-search parsing."""
         classification = archive.find(".//Classifications/GermlineClassification")
         if classification is None:
             return None
@@ -213,7 +362,7 @@ class ClinVarClient(BaseClient):
 
         accession = archive.get("Accession") or f"VCV-UNKNOWN-{archive.get('VariationID', '')}"
 
-        return ClinVarSubmission(
+        return _ClassificationFields(
             accession=accession,
             clinical_significance=clinical_significance,
             review_status=review_status,
@@ -222,3 +371,16 @@ class ClinVarClient(BaseClient):
             condition=condition,
             last_evaluated=last_evaluated,
         )
+
+    @staticmethod
+    def _extract_grch38_position(archive: Element) -> int | None:
+        location = archive.find(".//Location/SequenceLocation[@Assembly='GRCh38']")
+        if location is None:
+            return None
+        raw = location.get("positionVCF") or location.get("start")
+        if raw is None:
+            return None
+        try:
+            return int(raw)
+        except ValueError:
+            return None

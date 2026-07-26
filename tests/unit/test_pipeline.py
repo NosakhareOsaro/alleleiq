@@ -115,7 +115,7 @@ class TestBuildEvidenceReport:
         assert report.variant.consequence == "missense_variant"
         assert any(q.database == "gnomAD" and q.success for q in report.audit_trail.queries)
         assert any(q.database == "VEP" and q.success for q in report.audit_trail.queries)
-        assert len(report.criterion_evaluations) == 6
+        assert len(report.criterion_evaluations) == 8
 
     async def test_skips_clinvar_when_disabled(
         self,

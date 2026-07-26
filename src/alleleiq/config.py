@@ -91,6 +91,19 @@ class Settings(BaseSettings):
     clinvar_requests_per_second_no_key: float = Field(default=3.0, gt=0)
     clinvar_requests_per_second_with_key: float = Field(default=10.0, gt=0)
     clinvar_min_stars_strong_evidence: int = Field(default=2, ge=0, le=4)
+    same_position_window_bp: int = Field(
+        default=3,
+        ge=0,
+        description=(
+            "Base pairs either side of a variant's genomic position searched in ClinVar "
+            "for PS1/PM5's same-position comparison (see "
+            "alleleiq.scoring.criteria.same_position). AlleleIQ does not perform "
+            "strand-aware transcript-to-codon mapping, so this is a symmetric genomic "
+            "window rather than a true codon boundary; 3bp either side of a single-base "
+            "substitution covers its own codon in the common case while staying narrow "
+            "enough to avoid pulling in neighbouring, unrelated codons."
+        ),
+    )
 
     # ── Population coverage thresholds (minimum gnomAD v4 allele number) ─
     coverage_threshold_afr: int = Field(default=10_000, ge=0)

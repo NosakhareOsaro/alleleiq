@@ -15,6 +15,7 @@ from alleleiq.api.middleware import (
     RequestSizeLimitMiddleware,
 )
 from alleleiq.api.routers import health, variants
+from alleleiq.clients.gnomad import GnomADClient
 from alleleiq.config import get_settings
 from alleleiq.logging import configure_logging, get_logger
 
@@ -40,11 +41,12 @@ request receives HTTP 429.
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    """Configure logging on startup and log a clean shutdown message."""
+    """Configure logging on startup; log gnomAD cache statistics on shutdown."""
     settings = get_settings()
     configure_logging(settings.log_level)
     logger.info("AlleleIQ API starting", extra={"version": VERSION})
     yield
+    logger.info("gnomAD client cache statistics", extra=GnomADClient.cache_stats())
     logger.info("AlleleIQ API shutting down")
 
 

@@ -18,7 +18,7 @@ than silently returning incorrect nuclear-style frequencies.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
 import httpx
 from pydantic import BaseModel, ConfigDict
@@ -29,6 +29,7 @@ from alleleiq.logging import get_logger
 from alleleiq.models.population import AncestryGroup, PopulationFrequency
 from alleleiq.models.variant import GenomicCoordinates
 
+from ._cache import TTLCache, is_cache_miss
 from .base import BaseClient
 
 logger = get_logger(__name__)
@@ -76,7 +77,20 @@ class GeneConstraint(BaseModel):
 
 
 class GnomADClient(BaseClient):
-    """Async client for the public gnomAD v4 GraphQL API."""
+    """Async client for the public gnomAD v4 GraphQL API.
+
+    Population frequency and gene constraint lookups are cached in a
+    process-wide, class-level :class:`~alleleiq.clients._cache.TTLCache`
+    (default TTL: ``ALLELEIQ_GNOMAD_CACHE_TTL_SECONDS``, 1 hour) keyed on
+    variant/gene *and* dataset — a dataset change (e.g. ``gnomad_r4`` to
+    a future ``gnomad_r5``) is a different cache key, so no explicit
+    invalidation step is needed when the configured dataset changes.
+    Shared across instances deliberately: :mod:`alleleiq.pipeline`
+    constructs a fresh client per variant, so a per-instance cache would
+    never help across a multi-variant VCF.
+    """
+
+    _cache: ClassVar[TTLCache] = TTLCache()
 
     def __init__(self, settings: Settings | None = None) -> None:
         """Initialise the client from application settings.
@@ -93,6 +107,17 @@ class GnomADClient(BaseClient):
             min_request_interval_seconds=settings.gnomad_min_request_interval_seconds,
         )
         self._dataset = settings.gnomad_dataset
+        self._cache_ttl_seconds = settings.gnomad_cache_ttl_seconds
+
+    @classmethod
+    def cache_stats(cls) -> dict[str, int]:
+        """Return the shared cache's hit/miss/size counters, for shutdown logging."""
+        return {"hits": cls._cache.hits, "misses": cls._cache.misses, "size": cls._cache.size}
+
+    @classmethod
+    def clear_cache(cls) -> None:
+        """Clear the shared cache. Primarily for test isolation between test cases."""
+        cls._cache.clear()
 
     async def fetch_population_frequencies(
         self, coordinates: GenomicCoordinates
@@ -124,6 +149,13 @@ class GnomADClient(BaseClient):
             )
 
         variant_id = coordinates.variant_id
+        cache_key = f"frequencies:{self._dataset}:{variant_id}"
+        cached = self._cache.get(cache_key)
+        if not is_cache_miss(cached):
+            logger.debug("gnomAD population frequency cache hit", extra={"variant_id": variant_id})
+            result: dict[AncestryGroup, PopulationFrequency] = cached
+            return result
+
         body = await self._execute_query(
             _VARIANT_QUERY, {"variantId": variant_id, "datasetId": self._dataset}
         )
@@ -134,9 +166,12 @@ class GnomADClient(BaseClient):
                 "variant not found in gnomAD",
                 extra={"dataset": self._dataset, "chrom": coordinates.chrom},
             )
+            self._cache.set(cache_key, {}, self._cache_ttl_seconds)
             return {}
 
-        return self._parse_population_frequencies(variant_data)
+        frequencies = self._parse_population_frequencies(variant_data)
+        self._cache.set(cache_key, frequencies, self._cache_ttl_seconds)
+        return frequencies
 
     async def fetch_gene_constraint(self, gene_symbol: str) -> GeneConstraint | None:
         """Fetch gnomAD gene-level constraint metrics (pLI, LOEUF) for a gene.
@@ -151,21 +186,31 @@ class GnomADClient(BaseClient):
         Raises:
             GnomADError: On a network failure, GraphQL error, or malformed response.
         """
+        cache_key = f"constraint:{self._dataset}:{gene_symbol}"
+        cached = self._cache.get(cache_key)
+        if not is_cache_miss(cached):
+            logger.debug("gnomAD gene constraint cache hit", extra={"gene_symbol": gene_symbol})
+            constraint_result: GeneConstraint | None = cached
+            return constraint_result
+
         body = await self._execute_query(
             _GENE_CONSTRAINT_QUERY,
             {"geneSymbol": gene_symbol, "referenceGenome": "GRCh38"},
         )
         gene_data = body.get("data", {}).get("gene")
         if gene_data is None:
+            self._cache.set(cache_key, None, self._cache_ttl_seconds)
             return None
 
         constraint = gene_data.get("gnomad_constraint") or {}
-        return GeneConstraint(
+        result = GeneConstraint(
             gene_symbol=gene_symbol,
             pli=constraint.get("pli"),
             oe_lof=constraint.get("oe_lof"),
             loeuf=constraint.get("oe_lof_upper"),
         )
+        self._cache.set(cache_key, result, self._cache_ttl_seconds)
+        return result
 
     async def health_check(self) -> bool:
         """Check gnomAD API reachability with a minimal introspection query."""

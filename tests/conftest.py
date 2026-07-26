@@ -9,6 +9,7 @@ from typing import Any
 import pytest
 
 from alleleiq.__version__ import VERSION
+from alleleiq.clients.gnomad import GnomADClient
 from alleleiq.models import (
     AncestryGroup,
     AuditTrail,
@@ -27,6 +28,18 @@ from alleleiq.models import (
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 VCF_FIXTURES_DIR = FIXTURES_DIR / "vcf"
 RESPONSE_FIXTURES_DIR = FIXTURES_DIR / "responses"
+
+
+@pytest.fixture(autouse=True)
+def _clear_gnomad_client_cache() -> None:
+    """GnomADClient's response cache is a process-wide class-level singleton by
+    design (see commit 40 — it needs to survive across the fresh client instances
+    alleleiq.pipeline constructs per variant, including the fake subclasses the API
+    integration tests monkeypatch in). Applied suite-wide, not just in
+    test_gnomad_client.py, since a test in one file could otherwise silently reuse
+    another test's cached mock response for the same variant coordinates.
+    """
+    GnomADClient.clear_cache()
 
 
 @pytest.fixture

@@ -150,6 +150,7 @@ def analyse(
             progress.advance(task)
 
     _render_analysis_summary(reports, output_dir)
+    logger.info("gnomAD client cache statistics", extra=GnomADClient.cache_stats())
 
 
 def _render_analysis_summary(reports: list[EvidenceReport], output_dir: Path) -> None:

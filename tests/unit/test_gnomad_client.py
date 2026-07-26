@@ -159,6 +159,67 @@ class TestFetchGeneConstraint:
         assert constraint is None
 
 
+class TestResponseCaching:
+    async def test_second_lookup_for_same_variant_does_not_hit_transport(
+        self, gnomad_brca2_response: dict[str, Any]
+    ) -> None:
+        call_count = {"n": 0}
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            call_count["n"] += 1
+            return httpx.Response(200, json=gnomad_brca2_response)
+
+        coords = GenomicCoordinates(chrom="13", pos=32340301, ref="T", alt="C")
+
+        client_a = _client_with_transport(handler)
+        first = await client_a.fetch_population_frequencies(coords)
+
+        # A fresh client instance (as alleleiq.pipeline constructs per variant) with
+        # a transport that would fail if called — the cache is class-level/shared,
+        # so this second lookup must be served from it, not from this new transport.
+        async def failing_handler(request: httpx.Request) -> httpx.Response:
+            raise AssertionError("transport should not be called on a cache hit")
+
+        client_b = _client_with_transport(failing_handler)
+        second = await client_b.fetch_population_frequencies(coords)
+
+        assert call_count["n"] == 1
+        assert second == first
+
+    async def test_different_variants_are_cached_independently(
+        self, gnomad_brca2_response: dict[str, Any], gnomad_no_data_response: dict[str, Any]
+    ) -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            body = request.content.decode()
+            if "13-32340301-T-C" in body:
+                return httpx.Response(200, json=gnomad_brca2_response)
+            return httpx.Response(200, json=gnomad_no_data_response)
+
+        client = _client_with_transport(handler)
+        found = await client.fetch_population_frequencies(
+            GenomicCoordinates(chrom="13", pos=32340301, ref="T", alt="C")
+        )
+        not_found = await client.fetch_population_frequencies(
+            GenomicCoordinates(chrom="1", pos=999, ref="A", alt="G")
+        )
+
+        assert found != {}
+        assert not_found == {}
+
+    async def test_cache_stats_reflect_hits_and_misses(
+        self, gnomad_brca2_response: dict[str, Any]
+    ) -> None:
+        client = _client_with_transport(_json_handler(gnomad_brca2_response))
+        coords = GenomicCoordinates(chrom="13", pos=32340301, ref="T", alt="C")
+
+        await client.fetch_population_frequencies(coords)
+        await client.fetch_population_frequencies(coords)
+
+        stats = GnomADClient.cache_stats()
+        assert stats["hits"] >= 1
+        assert stats["size"] >= 1
+
+
 class TestHealthCheck:
     async def test_healthy_endpoint_returns_true(self) -> None:
         client = _client_with_transport(_json_handler({"data": {"__typename": "Query"}}))

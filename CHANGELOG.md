@@ -39,6 +39,10 @@ merge to `main` (see `.github/workflows/release.yml`).
 - **FastAPI REST interface** (`/api/v1/variants/analyse[/batch]`,
   `/api/v1/health[/ready]`) with OpenAPI documentation, request-context
   logging, rate limiting, and request size limiting.
+- **Response caching**: gnomAD population frequency and gene constraint
+  lookups are cached process-wide with a configurable TTL
+  (`ALLELEIQ_GNOMAD_CACHE_TTL_SECONDS`), avoiding redundant queries
+  across the multiple variants in a multi-variant VCF.
 - **Known-variant validation** (`scripts/validate_known_variants.py`,
   `alleleiq validate`): runs the full pipeline against 10 real ClinVar
   expert-panel-reviewed variants, reporting a three-way outcome

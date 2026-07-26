@@ -5,7 +5,8 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
 [![Licence](https://img.shields.io/badge/licence-Apache%202.0-green)](LICENSE)
 [![CI](https://github.com/NosakhareOsaro/alleleiq/actions/workflows/ci.yml/badge.svg)](https://github.com/NosakhareOsaro/alleleiq/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-target%2090%25-informational)](https://github.com/NosakhareOsaro/alleleiq/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-93%25-brightgreen)](https://github.com/NosakhareOsaro/alleleiq/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/badge/version-0.1.0--alpha-blue)](CHANGELOG.md)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 > **AlleleIQ does not classify variants.** It aggregates evidence, applies
@@ -145,15 +146,21 @@ databases) the reviewing scientist may wish to consult. See
 
 ## ACMG/AMP and ACGS 2024 alignment
 
-AlleleIQ implements a subset of ACMG/AMP criteria amenable to automation —
-`PVS1`, `PS1–PS4` (partial), `PM2`, `PP3`, `BA1`, `BS1`, `BP4` — scored
-using the Tavtigian et al. (2020) Bayesian evidence-point system as adopted
-by the ACGS 2024 UK guidelines, including the ACGS-specific `PM2_Supporting`
-downgrade and tiered `PP3`/`BP4` computational thresholds. Criteria that
-require clinical context AlleleIQ does not have access to (phenotype,
-family history, segregation, functional studies) are explicitly marked
-`requires_clinical_input` rather than omitted. See
-[`docs/architecture/acmg-framework.md`](docs/architecture/acmg-framework.md).
+AlleleIQ implements the six ACMG/AMP criteria answerable from gnomAD, VEP,
+and gnomAD's own constraint metrics alone — `PVS1`, `BA1`, `BS1`, `PM2`,
+`PP3`, `BP4` — scored using the Tavtigian et al. (2020) Bayesian
+evidence-point system as adopted by the ACGS 2024 UK guidelines, including
+the ACGS-specific `PM2_Supporting` downgrade and tiered `PP3`/`BP4`
+computational thresholds. Every other ACMG/AMP criterion (PS1–PS4, PM1,
+PM3–PM6, PP1, PP2, PP4, PP5, BS2–BS4, BP1–BP3, BP5–BP7) requires clinical
+phenotype, family history, segregation, or functional-study evidence
+AlleleIQ has no data source for, and is never silently assumed —
+criteria AlleleIQ cannot assess are explicitly marked
+`requires_clinical_input` rather than omitted or defaulted. See
+[`docs/architecture/acmg-framework.md`](docs/architecture/acmg-framework.md)
+for the full mapping, and a real validation run's result (4/10 concordant,
+6/10 appropriately conservative, 0/10 dangerous against ClinVar
+expert-panel-reviewed variants).
 
 ## Regulatory context
 

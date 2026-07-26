@@ -139,6 +139,17 @@ alleleiq version
 
 Interactive OpenAPI documentation is served at `/docs` when the API is running.
 
+## Web interface
+
+`make run-api` also serves a minimal upload-and-review interface at
+`/` — drag-and-drop a VCF, watch live evidence-source connectivity and
+(with JavaScript enabled) real per-variant progress, then view the
+rendered evidence report inline and download the JSON/HTML files. It
+is a thin presentation layer over the same pipeline the CLI and JSON
+API use — never a second implementation of variant analysis — and the
+core upload flow works with JavaScript disabled. See
+[`docs/guides/web-interface.md`](docs/guides/web-interface.md).
+
 ## Population coverage methodology
 
 For every gnomAD v4 ancestry group (AFR, AMR, ASJ, EAS, FIN, NFE, SAS, OTH),

@@ -40,6 +40,7 @@ nav:
       - Getting Started: guides/getting-started.md
       - Interpreting Reports: guides/interpreting-reports.md
       - API Reference: guides/api-reference.md
+      - Web Interface: guides/web-interface.md
 
 markdown_extensions:
   - admonition

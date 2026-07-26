@@ -1,0 +1,61 @@
+name: Bug report
+description: Report a defect in AlleleIQ's evidence aggregation, scoring, or reports.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. If this concerns a
+        specific variant's classification result, please include the
+        variant's coordinates (chrom-pos-ref-alt, GRCh38) so it can be
+        reproduced exactly.
+
+  - type: checkboxes
+    id: clinical-impact
+    attributes:
+      label: Does this affect a clinical classification result?
+      options:
+        - label: >-
+            Yes — this bug affects the preliminary classification,
+            evidence points, or a criterion's met/not-met outcome for a
+            real variant.
+        - label: >-
+            No — this is a UI, performance, documentation, or tooling
+            issue with no effect on evidence or scoring output.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: variant
+    attributes:
+      label: Variant (if applicable)
+      description: chrom-pos-ref-alt (GRCh38), or attach the input VCF.
+      placeholder: "17-43094692-G-A"
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Exact command(s) run, e.g. `uv run alleleiq analyse ...`.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: AlleleIQ version
+      description: Output of `uv run alleleiq version`.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output or report excerpt
+      render: shell

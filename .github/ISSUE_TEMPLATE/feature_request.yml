@@ -1,0 +1,48 @@
+name: Feature request
+description: Suggest a new ACMG/AMP criterion, evidence source, or capability.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a new or modified ACMG/AMP criterion specifically, please
+        include the ACGS 2024 (or ACMG/AMP 2015) guidance reference —
+        see `docs/architecture/acmg-framework.md` for the format used by
+        existing criteria.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: What can't AlleleIQ currently do that this would enable?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+      description: >-
+        If this is a new criterion, which data source(s) would it draw
+        on, and what's the evaluation logic? If a data source AlleleIQ
+        doesn't currently integrate is required, note that too.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - ACMG/AMP criterion
+        - Evidence source client (gnomAD/VEP/ClinVar/other)
+        - Reporting (JSON/HTML)
+        - CLI
+        - API
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered

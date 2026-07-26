@@ -13,18 +13,25 @@ this module). Re-verify periodically: ClinVar classifications are
 occasionally revised.
 
 Evaluation runs through :func:`alleleiq.pipeline.build_evidence_report`
-with ``include_clinvar=False``: no criterion evaluator in
-:mod:`alleleiq.scoring.criteria` consumes a ClinVar submission, so this
-merely avoids a redundant query — the comparison against ClinVar's
-expert-panel consensus is not circular either way.
+with ``include_clinvar=False``: as of v0.2.0, PS1/PM5
+(:mod:`alleleiq.scoring.criteria.same_position`) and PM1
+(:mod:`alleleiq.scoring.criteria.hotspot`) *do* consume ClinVar data, but
+``include_clinvar=False`` disables their ClinVar-dependent evaluation
+paths entirely (they fall through to not-assessed) rather than issuing a
+query whose result would then be compared against — the comparison
+against ClinVar's expert-panel consensus stays non-circular either way,
+at the cost of those three criteria never contributing to this
+particular validation run.
 
 On outcome categories — read this before interpreting a run's output.
-AlleleIQ currently automates 6 of the ~28 ACMG/AMP criteria (PVS1, BA1,
-BS1, PM2, PP3, BP4). It has no PS3 (functional studies), PM1 (mutational
-hotspot), PP1 (segregation), PS2 (de novo), or PS4 (case-control) data —
-criteria that frequently supply the deciding points for a real expert
-panel's Pathogenic/Benign call. A run against expert-panel-reviewed
-variants should therefore expect three outcome categories, not two:
+AlleleIQ currently automates 11 of the ~28 ACMG/AMP criteria (PVS1, BA1,
+BS1, PM2, PP3, BP4, PS1, PM5, PP2, BP1, PM1), though this validation run
+only exercises the 8 that don't require a live ClinVar query (see above).
+It has no PS3 (functional studies), PP1 (segregation), PS2 (de novo), or
+PS4 (case-control) data — criteria that frequently supply the deciding
+points for a real expert panel's Pathogenic/Benign call. A run against
+expert-panel-reviewed variants should therefore expect three outcome
+categories, not two:
 
 - CONCORDANT: AlleleIQ's direction matches ClinVar's.
 - CONSERVATIVE: AlleleIQ lands on VUS where ClinVar has a definitive

@@ -6,7 +6,7 @@
 [![Licence](https://img.shields.io/badge/licence-Apache%202.0-green)](LICENSE)
 [![CI](https://github.com/NosakhareOsaro/alleleiq/actions/workflows/ci.yml/badge.svg)](https://github.com/NosakhareOsaro/alleleiq/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/badge/coverage-93%25-brightgreen)](https://github.com/NosakhareOsaro/alleleiq/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v0.1.0--alpha.0-blue)](https://github.com/NosakhareOsaro/alleleiq/releases/tag/v0.1.0-alpha.0)
+[![Release](https://img.shields.io/badge/release-v0.2.0-blue)](https://github.com/NosakhareOsaro/alleleiq/releases/tag/v0.2.0)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 > **AlleleIQ does not classify variants.** It aggregates evidence, applies
@@ -164,21 +164,26 @@ databases) the reviewing scientist may wish to consult. See
 
 ## ACMG/AMP and ACGS 2024 alignment
 
-AlleleIQ implements the six ACMG/AMP criteria answerable from gnomAD, VEP,
-gnomAD's own constraint metrics, a local REVEL index, and ClinGen's
-bundled Gene-Disease Validity and Dosage Sensitivity datasets — `PVS1`,
-`BA1`, `BS1`, `PM2`, `PP3`, `BP4` — scored using the Tavtigian et al. (2020) Bayesian
-evidence-point system as adopted by the ACGS 2024 UK guidelines, including
-the ACGS-specific `PM2_Supporting` downgrade and tiered `PP3`/`BP4`
-computational thresholds. Every other ACMG/AMP criterion (PS1–PS4, PM1,
-PM3–PM6, PP1, PP2, PP4, PP5, BS2–BS4, BP1–BP3, BP5–BP7) requires clinical
-phenotype, family history, segregation, or functional-study evidence
-AlleleIQ has no data source for, and is never silently assumed —
-criteria AlleleIQ cannot assess are explicitly marked
-`requires_clinical_input` rather than omitted or defaulted. See
+As of v0.2.0, AlleleIQ implements every ACMG/AMP criterion answerable from
+gnomAD, VEP, ClinVar, a local REVEL index, ClinGen's bundled Gene-Disease
+Validity and Dosage Sensitivity datasets, and UniProt domain annotations —
+`PVS1`, `BA1`, `BS1`, `PM2`, `PP3`, `BP4`, `PS1`, `PM5`, `PP2`, `BP1`, and
+`PM1` — scored using the Tavtigian et al. (2020) Bayesian evidence-point
+system as adopted by the ACGS 2024 UK guidelines, including the
+ACGS-specific `PM2_Supporting` downgrade, tiered `PP3`/`BP4` computational
+thresholds, and ClinGen-driven PVS1 strength tiering. Every other ACMG/AMP
+criterion (PS2–PS4, PM3, PM4, PM6, PP1, PP4, PP5, BS2–BS4, BP2, BP3,
+BP5–BP7) requires clinical phenotype, family history, segregation, de novo
+confirmation, or functional-study evidence AlleleIQ has no data source
+for, and is never silently assumed — criteria AlleleIQ cannot assess are
+explicitly marked `requires_clinical_input` rather than omitted or
+defaulted, as are several of the newly automated criteria themselves
+(PS1, PM5, and PM1 always require clinical sign-off even when applied,
+reflecting genuine automation limits — see
 [`docs/architecture/acmg-framework.md`](docs/architecture/acmg-framework.md)
-for the full mapping, and a real validation run's result (4/10 concordant,
-6/10 appropriately conservative, 0/10 dangerous against ClinVar
+for exactly which criteria and why). See that document for the full
+mapping, and a real validation run's result (4/10 concordant, 6/10
+appropriately conservative, 0/10 dangerous against ClinVar
 expert-panel-reviewed variants).
 
 ## Regulatory context
@@ -206,8 +211,8 @@ If you use AlleleIQ in academic work, please cite:
   title   = {AlleleIQ: Population-Inclusive Evidence Aggregation for
              Clinical Genomic Variant Interpretation},
   year    = {2026},
-  url     = {https://github.com/NosakhareOsaro/alleleiq/releases/tag/v0.1.0-alpha.0},
-  version = {0.1.0-alpha}
+  url     = {https://github.com/NosakhareOsaro/alleleiq/releases/tag/v0.2.0},
+  version = {0.2.0}
 }
 ```
 

@@ -1,6 +1,6 @@
 # ACMG/AMP Framework Implementation
 
-AlleleIQ automates 8 of the ~28 ACMG/AMP criteria (Richards et al. 2015),
+AlleleIQ automates 11 of the ~28 ACMG/AMP criteria (Richards et al. 2015),
 as adjusted by ACGS 2024, and scores them using the Tavtigian et al.
 (2020) Bayesian point framework. This page explains what is implemented,
 what is deliberately out of scope, and why.
@@ -12,20 +12,23 @@ what is deliberately out of scope, and why.
 | **BA1** | `scoring/criteria/population_frequency.py` | Allele frequency > 5% (configurable) in *any adequately covered* gnomAD v4 population. Applied per-population, per ACGS 2024 — a high frequency observed only in an under-covered population does not trigger it. |
 | **BS1** | `scoring/criteria/population_frequency.py` | Allele frequency above a disease-specific threshold (dominant/recessive). Requires `inheritance_mode` context; without it, marked `requires_clinical_input`. |
 | **PM2** | `scoring/criteria/population_frequency.py` | Downgraded to **Supporting** strength by default per ACGS 2024. Assesses true absence (AC=0) in every adequately covered population; a variant observed at low-but-nonzero frequency is reported not-met with `requires_clinical_input=True` rather than an invented rarity cutoff. |
-| **PP3 / BP4** | `scoring/criteria/computational.py` | REVEL ≥0.70/≥0.90 → Supporting/Moderate (PP3); ≤0.15 → Supporting (BP4). SpliceAI max delta ≥0.20/≥0.50 → Supporting/Moderate (PP3); <0.10 → Supporting (BP4). REVEL's absence is only flagged as a gap for missense variants (where it's expected); SpliceAI is considered for any consequence. |
+| **PP3 / BP4** | `scoring/criteria/computational.py` | REVEL ≥0.70/≥0.90 → Supporting/Moderate (PP3); ≤0.15 → Supporting (BP4), sourced from a local tabix-indexed REVEL index with VEP REST as fallback. SpliceAI max delta ≥0.20/≥0.50 → Supporting/Moderate (PP3); <0.10 → Supporting (BP4). REVEL's absence is only flagged as a gap for missense variants (where it's expected); SpliceAI is considered for any consequence. |
 | **PVS1** | `scoring/criteria/lof.py` | A simplified ACGS 2024 decision tree: LoF consequence type → gene-disease mechanism, tiered from ClinGen's bundled Gene-Disease Validity classification + Dosage Sensitivity Map haploinsufficiency score (Definitive/Strong + score 3 → full strength; Moderate + score 2 → fixed Strong; falls back to a small bundled gene list / gnomAD pLI-LOEUF when ClinGen has no curation for the gene) → exon position (last/penultimate exon downgrades Strong instead of Very Strong, reflecting possible NMD escape). |
 | **PS1** | `scoring/criteria/same_position.py` | This variant's amino-acid change (from VEP's HGVSp) matches an established (≥`clinvar_min_stars_strong_evidence`-star) Pathogenic/Likely Pathogenic ClinVar record at the same genomic position. See "PS1 / PM5 limitations" below — this is comparative evidence, not a fully automated determination. |
 | **PM5** | `scoring/criteria/same_position.py` | A *different* amino-acid change at the same codon has an established Pathogenic/Likely Pathogenic ClinVar classification. Same data source and limitations as PS1. |
+| **PP2** | `scoring/criteria/gene_level.py` | Missense variant in a gene from the curated `data/gene_annotations/missense_constraint.json` list where missense variation is an established disease mechanism. Genes outside the curated list are explicitly not assessed, never defaulted. |
+| **BP1** | `scoring/criteria/gene_level.py` | Missense variant in a gene from the same curated list where disease is caused specifically by loss-of-function — evidence a missense variant there is more likely benign. Mutually exclusive with PP2 per gene by construction. |
+| **PM1** | `scoring/criteria/hotspot.py` | Variant position falls in a curated hotspot, a live UniProt-annotated domain/active/binding site, or a ClinVar-density-derived hotspot (≥3 independent 2+-star Pathogenic records nearby), *and* the same region carries no disqualifying Benign/Likely Benign ClinVar density. See "PM1 limitations" below. |
 
-## Why these eight
+## Why these eleven
 
-They are the criteria answerable from gnomAD, VEP, ClinVar, and gnomAD's
-own constraint metrics alone — no clinical phenotype, family history,
-segregation data, or functional assay results required. Every other
-ACMG/AMP criterion (PS2–PS4, PM1, PM3, PM4, PM6, PP1, PP2, PP4, PP5,
-BS2–BS4, BP1–BP3, BP5–BP7) needs evidence AlleleIQ has no data source
-for, and is never silently assumed to be "not met" — it simply never
-appears in `criteria_applied` or `criteria_not_met`, only in the
+They are the criteria answerable from gnomAD, VEP, ClinVar, ClinGen, a
+local REVEL index, and UniProt domain annotations alone — no clinical
+phenotype, family history, segregation data, or functional assay results
+required. Every other ACMG/AMP criterion (PS2–PS4, PM3, PM4, PM6, PP1,
+PP4, PP5, BS2–BS4, BP2, BP3, BP5–BP7) needs evidence AlleleIQ has no data
+source for, and is never silently assumed to be "not met" — it simply
+never appears in `criteria_applied` or `criteria_not_met`, only in the
 reviewing scientist's own workup.
 
 ## PS1 / PM5 limitations
@@ -53,6 +56,23 @@ surfaced rather than hidden:
   PS1 and PM5 never do — a same-position comparison always needs a human
   to confirm the two variants plausibly share a pathogenic mechanism
   before the match is relied upon.
+
+## PM1 limitations
+
+- **Domain/hotspot coverage is itself incomplete.** UniProt annotation
+  depth and the bundled curated hotspot list both vary substantially by
+  gene; a "not assessed" PM1 result cannot be distinguished from
+  "genuinely not a critical region" using AlleleIQ's data alone.
+- **`requires_clinical_input=True` on every outcome, including
+  not-assessed.** This is a deliberate departure from every other
+  criterion's convention (where a clean "not assessed" needs no review):
+  PM1's ambiguity is different in kind, not merely an extra note of
+  caution, so it is flagged unconditionally — see the module docstring
+  in `scoring/criteria/hotspot.py` for the full reasoning.
+- **Same position-window caveat as PS1/PM5** applies to the ClinVar
+  variant-density signal (an approximate genomic window, not true codon
+  mapping), converted from an amino-acid window via an approximate
+  3bp/codon factor.
 
 ## Scoring: `scoring/bayesian.py`
 
@@ -92,9 +112,12 @@ Classification bands: ≥10 Pathogenic · 6–9 Likely Pathogenic · 0–5 VUS �
 ClinVar expert-panel-reviewed variants. At the time of writing: 4/10
 directly concordant, 6/10 conservative (AlleleIQ lands on VUS where
 ClinVar has a definitive call), **0/10 dangerous** (no
-Pathogenic↔Benign direction flips). The 6 conservative cases are not
+Pathogenic↔Benign direction flips), unchanged after adding PS1, PM5,
+PP2, BP1, and PM1 in v0.2.0. The 6 conservative cases are not
 failures — they are variants whose ClinVar classification depends on
-PS3 (functional studies), PM1 (hotspot), or PP1 (segregation) evidence
-AlleleIQ has no access to. See the module docstring in
+PS3 (functional studies) or PP1 (segregation) evidence AlleleIQ has no
+access to, or on a same-position/hotspot/gene-mechanism signal that
+happens not to apply to these particular ten variants. See the module
+docstring in
 `alleleiq.validation` for the full reasoning behind treating this as the
 *expected and safe* outcome of a criteria subset this size.

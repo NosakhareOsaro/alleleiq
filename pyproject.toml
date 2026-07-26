@@ -1,6 +1,6 @@
 [project]
 name = "alleleiq"
-version = "0.1.0-alpha"
+version = "0.2.0"
 description = "Population-inclusive clinical genomic variant interpretation platform: evidence aggregation and ACMG/AMP scoring in support of clinical genetic scientist review."
 readme = "README.md"
 requires-python = ">=3.11"

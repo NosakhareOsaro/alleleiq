@@ -33,7 +33,9 @@ This will:
 1. Parse and normalise the VCF (`tests/fixtures/vcf/single_snv.vcf`
    contains one BRCA1 variant on GRCh38).
 2. Query gnomAD v4, Ensembl VEP, and ClinVar for evidence.
-3. Evaluate BA1, BS1, PM2, PP3, BP4, and PVS1.
+3. Evaluate BA1, BS1, PM2, PP3, BP4, PVS1, PS1, PM5, PP2, BP1, and PM1
+   (see [ACMG Framework](../architecture/acmg-framework.md) for what
+   each requires and its limitations).
 4. Assess population coverage per ancestry group.
 5. Accumulate a Bayesian evidence score and preliminary classification.
 6. Write `./reports/<chrom>-<pos>-<ref>-<alt>.json` and `.html`.

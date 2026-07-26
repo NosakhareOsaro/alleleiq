@@ -42,6 +42,15 @@
 <form method="post" action="/analyse" enctype="multipart/form-data"
       hx-post="/analyse" hx-target="#result" hx-swap="innerHTML" hx-encoding="multipart/form-data"
       id="analyse-form" class="upload-zone">
+  <!--
+    job_id starts empty and is filled in by the script below only when
+    JavaScript and crypto.randomUUID() are available. A plain
+    JS-disabled submission simply sends an empty job_id, which
+    web/router.py treats as "no progress tracking for this request" --
+    analysis proceeds identically either way, just without a live SSE
+    feed to subscribe to.
+  -->
+  <input type="hidden" name="job_id" id="job_id" value="">
   <p class="mb-4">Drag and drop a VCF file here, or choose a file:</p>
   <input type="file" name="vcf_file" accept=".vcf,.vcf.gz" required>
   <div class="mt-4 text-sm">
@@ -53,11 +62,15 @@
   <button type="submit" class="btn-primary mt-4">Analyse</button>
 </form>
 
+<div id="progress" class="progress-region mt-4"></div>
 <div id="result" class="mt-8"></div>
 
 <script>
   // Progressive enhancement only: if JavaScript is disabled, the form
-  // above still works via a plain POST and full-page response.
+  // above still works via a plain POST and full-page response -- there
+  // is simply no live per-variant progress feed while it runs, since
+  // that requires a client-generated job_id to correlate the SSE
+  // subscription below with the POST /analyse request.
   (function () {
     var zone = document.getElementById("analyse-form");
     zone.addEventListener("dragover", function (e) {
@@ -75,6 +88,20 @@
         input.files = e.dataTransfer.files;
       }
     });
+
+    if (window.crypto && window.crypto.randomUUID) {
+      var jobId = window.crypto.randomUUID();
+      document.getElementById("job_id").value = jobId;
+
+      var progressDiv = document.getElementById("progress");
+      progressDiv.setAttribute("hx-ext", "sse");
+      progressDiv.setAttribute("sse-connect", "/analyse/" + jobId + "/progress");
+      progressDiv.setAttribute("sse-swap", "message");
+      progressDiv.setAttribute("sse-close", "complete");
+      if (window.htmx) {
+        htmx.process(progressDiv);
+      }
+    }
   })();
 </script>
 

@@ -11,6 +11,7 @@ silently treating missing evidence as absence of evidence.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 from alleleiq.__version__ import VERSION
@@ -37,6 +38,22 @@ from alleleiq.scoring.criteria.same_position import PM5Criterion, PS1Criterion
 
 logger = get_logger(__name__)
 
+ProgressCallback = Callable[[str], None]
+"""A synchronous, best-effort progress hook: called with a short stage
+description (e.g. ``"querying gnomAD"``) at each evidence-gathering
+step. Used by the web interface (see :mod:`alleleiq.web.router`) to
+drive a Server-Sent Events progress feed; the CLI and JSON REST API
+simply never supply one, which is a complete no-op (see
+:func:`_notify`), so this has zero effect on either of those paths.
+"""
+
+
+def _notify(on_progress: ProgressCallback | None, stage: str) -> None:
+    """Call ``on_progress(stage)`` if a callback was supplied; otherwise do nothing."""
+    if on_progress is not None:
+        on_progress(stage)
+
+
 _EVALUATORS: tuple[CriterionEvaluator, ...] = (
     BA1Criterion(),
     BS1Criterion(),
@@ -52,10 +69,14 @@ _EVALUATORS: tuple[CriterionEvaluator, ...] = (
 
 
 async def _fetch_gnomad_and_vep(
-    variant: Variant, settings: Settings, queries: list[DatabaseQueryRecord]
+    variant: Variant,
+    settings: Settings,
+    queries: list[DatabaseQueryRecord],
+    on_progress: ProgressCallback | None = None,
 ) -> tuple[dict[AncestryGroup, PopulationFrequency], VEPAnnotation | None, GeneConstraint | None]:
     async with GnomADClient(settings) as gnomad_client, VEPClient(settings) as vep_client:
         population_frequencies: dict[AncestryGroup, PopulationFrequency] = {}
+        _notify(on_progress, "querying gnomAD")
         started_at = datetime.now(UTC)
         try:
             population_frequencies = await gnomad_client.fetch_population_frequencies(
@@ -86,6 +107,7 @@ async def _fetch_gnomad_and_vep(
             )
 
         vep_annotation: VEPAnnotation | None = None
+        _notify(on_progress, "querying VEP")
         vep_started_at = datetime.now(UTC)
         try:
             vep_annotation = await vep_client.fetch_annotation(variant.coordinates)
@@ -154,6 +176,7 @@ async def _fetch_clinvar(
     vep_annotation: VEPAnnotation | None,
     settings: Settings,
     queries: list[DatabaseQueryRecord],
+    on_progress: ProgressCallback | None = None,
 ) -> ClinVarSubmission | None:
     rsid = vep_annotation.existing_variant_id if vep_annotation else None
     gene_symbol = (vep_annotation.gene_symbol if vep_annotation else None) or variant.gene_symbol
@@ -161,6 +184,7 @@ async def _fetch_clinvar(
     if not rsid and not (gene_symbol and hgvs_c):
         return None
 
+    _notify(on_progress, "querying ClinVar")
     started_at = datetime.now(UTC)
     try:
         async with ClinVarClient(settings) as clinvar_client:
@@ -201,6 +225,7 @@ async def _fetch_revel(
     vep_annotation: VEPAnnotation | None,
     settings: Settings,
     queries: list[DatabaseQueryRecord],
+    on_progress: ProgressCallback | None = None,
 ) -> tuple[float | None, str | None]:
     """Resolve a REVEL score via REVELClient, recording the outcome in the audit trail.
 
@@ -208,6 +233,7 @@ async def _fetch_revel(
     reuses the annotation already fetched by :func:`_fetch_gnomad_and_vep`
     instead of issuing a second VEP request.
     """
+    _notify(on_progress, "querying REVEL")
     started_at = datetime.now(UTC)
     client = REVELClient(settings)
     try:
@@ -298,6 +324,7 @@ def _resolve_clingen(
     gene_symbol: str | None,
     settings: Settings,
     queries: list[DatabaseQueryRecord],
+    on_progress: ProgressCallback | None = None,
 ) -> tuple[str | None, int | None]:
     """Resolve ClinGen gene-disease validity classification and haploinsufficiency score.
 
@@ -312,6 +339,7 @@ def _resolve_clingen(
     if not gene_symbol:
         return None, None
 
+    _notify(on_progress, "querying ClinGen")
     started_at = datetime.now(UTC)
     client = ClinGenClient(settings)
     validity = client.get_disease_validity(gene_symbol)
@@ -349,6 +377,7 @@ async def build_evidence_report(
     *,
     settings: Settings | None = None,
     include_clinvar: bool = True,
+    on_progress: ProgressCallback | None = None,
 ) -> EvidenceReport:
     """Run one variant through the full evidence-gathering and scoring pipeline.
 
@@ -361,6 +390,11 @@ async def build_evidence_report(
             any scoring criterion (see :mod:`alleleiq.scoring.criteria`),
             so disabling it only affects report completeness, not the
             preliminary classification.
+        on_progress: Optional callback invoked with a short stage
+            description (``"querying gnomAD"``, ``"scoring"``, ...) as
+            each evidence-gathering step starts. A no-op when omitted;
+            the CLI and JSON REST API never pass one. See
+            :mod:`alleleiq.web.router` for the one caller that does.
 
     Returns:
         A complete :class:`~alleleiq.models.report.EvidenceReport`.
@@ -369,29 +403,34 @@ async def build_evidence_report(
     queries: list[DatabaseQueryRecord] = []
 
     population_frequencies, vep_annotation, gene_constraint = await _fetch_gnomad_and_vep(
-        variant, settings, queries
+        variant, settings, queries, on_progress
     )
 
     clinvar_submission = None
     same_position_matches: list[ClinVarPositionalMatch] = []
     if include_clinvar:
-        clinvar_submission = await _fetch_clinvar(variant, vep_annotation, settings, queries)
+        clinvar_submission = await _fetch_clinvar(
+            variant, vep_annotation, settings, queries, on_progress
+        )
         same_position_matches = await _fetch_same_position_matches(
             variant, vep_annotation, settings, queries
         )
 
-    revel_score, revel_source = await _fetch_revel(variant, vep_annotation, settings, queries)
+    revel_score, revel_source = await _fetch_revel(
+        variant, vep_annotation, settings, queries, on_progress
+    )
 
     gene_symbol_for_clingen = (
         vep_annotation.gene_symbol if vep_annotation else None
     ) or variant.gene_symbol
     clingen_classification, clingen_hi_score = _resolve_clingen(
-        gene_symbol_for_clingen, settings, queries
+        gene_symbol_for_clingen, settings, queries, on_progress
     )
 
     variant = _merge_vep_into_variant(variant, vep_annotation)
     coverage_gaps, coverage_summary = assess_coverage(population_frequencies, settings)
 
+    _notify(on_progress, "scoring")
     context = CriterionContext(
         variant=variant,
         population_frequencies=population_frequencies,

@@ -36,6 +36,15 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        """Generate a request ID, time the downstream handler, and log the result.
+
+        Args:
+            request: The incoming request.
+            call_next: The next handler in the middleware chain.
+
+        Returns:
+            The downstream response, with an ``X-Request-ID`` header added.
+        """
         request_id = str(uuid4())
         started_at = time.monotonic()
 
@@ -64,6 +73,15 @@ class _SlidingWindowRateLimiter:
         self._requests: dict[str, deque[float]] = defaultdict(deque)
 
     def is_allowed(self, client_id: str) -> bool:
+        """Record a request attempt for ``client_id`` and report whether it's within limit.
+
+        Args:
+            client_id: An identifier for the caller (typically their IP).
+
+        Returns:
+            True if this request is allowed under the hourly limit;
+            False if the limit has been reached.
+        """
         now = time.monotonic()
         window_start = now - _SECONDS_PER_HOUR
         timestamps = self._requests[client_id]
@@ -83,6 +101,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self._limiter = _SlidingWindowRateLimiter(limit_per_hour)
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        """Reject the request with HTTP 429 if the caller has exceeded their hourly limit.
+
+        Args:
+            request: The incoming request.
+            call_next: The next handler in the middleware chain.
+
+        Returns:
+            A 429 JSON response if rate-limited, otherwise the downstream response.
+        """
         client_id = request.client.host if request.client else "unknown"
         if not self._limiter.is_allowed(client_id):
             return JSONResponse(
@@ -108,6 +135,15 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
         self._max_bytes = max_bytes
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        """Reject the request with HTTP 413 if its Content-Length exceeds the configured maximum.
+
+        Args:
+            request: The incoming request.
+            call_next: The next handler in the middleware chain.
+
+        Returns:
+            A 413 JSON response if oversized, otherwise the downstream response.
+        """
         content_length = request.headers.get("content-length")
         if content_length is not None:
             try:

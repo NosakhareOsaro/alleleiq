@@ -77,6 +77,16 @@ class VEPError(DatabaseQueryError):
     """
 
 
+class UniProtError(DatabaseQueryError):
+    """Raised when the UniProt REST client cannot complete a query.
+
+    Covers network failures and malformed responses. Consumers should
+    degrade PM1 to ``requires_clinical_input`` rather than aborting the
+    entire analysis, since UniProt domain annotation is one of several
+    PM1 evidence sources (see :mod:`alleleiq.scoring.criteria.hotspot`).
+    """
+
+
 class ScoringError(AlleleIQError):
     """Base class for failures in the ACMG/AMP evidence scoring engine."""
 

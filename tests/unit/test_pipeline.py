@@ -17,6 +17,7 @@ import pytest
 import alleleiq.pipeline as pipeline_module
 from alleleiq.clients.clinvar import ClinVarClient
 from alleleiq.clients.gnomad import GnomADClient
+from alleleiq.clients.uniprot import UniProtClient
 from alleleiq.clients.vep import VEPClient
 from alleleiq.models.evidence import EvidenceStrength
 from alleleiq.models.variant import GenomicCoordinates, Variant, VariantType
@@ -83,6 +84,28 @@ def _patch_clinvar_not_found(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(pipeline_module, "ClinVarClient", _FakeClinVarClient)
 
 
+def _patch_uniprot_empty(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Stub UniProtClient to return no domain hits, keeping these tests network-free.
+
+    PM1's UniProt lookup is not gated by ``include_clinvar`` — it runs for
+    every variant with a resolved gene symbol — so every test in this
+    module that calls :func:`build_evidence_report` needs this, the same
+    way every gnomAD/VEP-calling test already patches those clients.
+    """
+
+    class _FakeUniProtClient(UniProtClient):  # type: ignore[misc]
+        async def __aenter__(self) -> _FakeUniProtClient:
+            async def handler(request: httpx.Request) -> httpx.Response:
+                return httpx.Response(200, json={"results": []})
+
+            self._client = httpx.AsyncClient(
+                base_url=self._base_url, transport=httpx.MockTransport(handler)
+            )
+            return self
+
+    monkeypatch.setattr(pipeline_module, "UniProtClient", _FakeUniProtClient)
+
+
 def _variant() -> Variant:
     # Coordinates match vep_missense_response's "input" field (17 43094692 . G A . . .):
     # VEPClient looks results up by the variant_id parsed from the response body, so the
@@ -107,6 +130,7 @@ class TestBuildEvidenceReport:
         _patch_gnomad(monkeypatch, gnomad_brca2_response)
         _patch_vep(monkeypatch, vep_missense_response)
         _patch_clinvar_not_found(monkeypatch)
+        _patch_uniprot_empty(monkeypatch)
 
         report = await build_evidence_report(_variant())
 
@@ -115,7 +139,7 @@ class TestBuildEvidenceReport:
         assert report.variant.consequence == "missense_variant"
         assert any(q.database == "gnomAD" and q.success for q in report.audit_trail.queries)
         assert any(q.database == "VEP" and q.success for q in report.audit_trail.queries)
-        assert len(report.criterion_evaluations) == 10
+        assert len(report.criterion_evaluations) == 11
 
     async def test_skips_clinvar_when_disabled(
         self,
@@ -125,6 +149,7 @@ class TestBuildEvidenceReport:
     ) -> None:
         _patch_gnomad(monkeypatch, gnomad_brca2_response)
         _patch_vep(monkeypatch, vep_missense_response)
+        _patch_uniprot_empty(monkeypatch)
 
         report = await build_evidence_report(_variant(), include_clinvar=False)
 
@@ -138,6 +163,7 @@ class TestBuildEvidenceReport:
         _patch_gnomad_failing(monkeypatch)
         _patch_vep(monkeypatch, vep_missense_response)
         _patch_clinvar_not_found(monkeypatch)
+        _patch_uniprot_empty(monkeypatch)
 
         report = await build_evidence_report(_variant())
 
@@ -170,6 +196,7 @@ class TestClinGenIntegration:
         _patch_gnomad(monkeypatch, gnomad_brca2_response)
         _patch_vep(monkeypatch, vep_stop_gained_response)
         _patch_clinvar_not_found(monkeypatch)
+        _patch_uniprot_empty(monkeypatch)
 
         report = await build_evidence_report(_stop_gained_variant())
 
@@ -187,6 +214,7 @@ class TestClinGenIntegration:
         _patch_gnomad(monkeypatch, gnomad_brca2_response)
         _patch_vep(monkeypatch, vep_stop_gained_response)
         _patch_clinvar_not_found(monkeypatch)
+        _patch_uniprot_empty(monkeypatch)
 
         report = await build_evidence_report(_stop_gained_variant())
 

@@ -19,6 +19,7 @@ from alleleiq.clients.clingen import ClinGenClient
 from alleleiq.clients.clinvar import ClinVarClient, ClinVarPositionalMatch, ClinVarSubmission
 from alleleiq.clients.gnomad import GeneConstraint, GnomADClient
 from alleleiq.clients.revel import REVELClient
+from alleleiq.clients.uniprot import ProteinRegion, UniProtClient
 from alleleiq.clients.vep import VEPAnnotation, VEPClient
 from alleleiq.config import Settings, get_settings
 from alleleiq.exceptions import AlleleIQError
@@ -32,6 +33,7 @@ from alleleiq.scoring.coverage import assess_coverage
 from alleleiq.scoring.criteria.base import CriterionContext, CriterionEvaluator
 from alleleiq.scoring.criteria.computational import BP4Criterion, PP3Criterion
 from alleleiq.scoring.criteria.gene_level import BP1Criterion, PP2Criterion
+from alleleiq.scoring.criteria.hotspot import PM1Criterion, load_curated_hotspots
 from alleleiq.scoring.criteria.lof import PVS1Criterion
 from alleleiq.scoring.criteria.population_frequency import BA1Criterion, BS1Criterion, PM2Criterion
 from alleleiq.scoring.criteria.same_position import PM5Criterion, PS1Criterion
@@ -65,6 +67,7 @@ _EVALUATORS: tuple[CriterionEvaluator, ...] = (
     PM5Criterion(),
     PP2Criterion(),
     BP1Criterion(),
+    PM1Criterion(),
 )
 
 
@@ -320,6 +323,106 @@ async def _fetch_same_position_matches(
         return []
 
 
+async def _fetch_pm1_evidence(
+    variant: Variant,
+    vep_annotation: VEPAnnotation | None,
+    settings: Settings,
+    queries: list[DatabaseQueryRecord],
+    on_progress: ProgressCallback | None = None,
+    *,
+    include_clinvar: bool = True,
+) -> tuple[list[ProteinRegion], list[ClinVarPositionalMatch]]:
+    """Resolve PM1's three evidence sources: curated hotspots, UniProt domains, ClinVar density.
+
+    Skipped (no network calls) when there is no gene symbol at all, since
+    none of the three sources can be consulted without one. Curated
+    hotspots are a local file lookup (no failure path, like
+    :func:`_resolve_clingen`); UniProt and the wider ClinVar window are
+    live queries that degrade to an empty list on failure, recorded in
+    the audit trail like every other evidence source. The ClinVar portion
+    additionally respects ``include_clinvar``, exactly like
+    :func:`_fetch_same_position_matches` for PS1/PM5 — "no ClinVar
+    queries" must mean none, not "none except PM1's".
+    """
+    gene_symbol = (vep_annotation.gene_symbol if vep_annotation else None) or variant.gene_symbol
+    if not gene_symbol:
+        return [], []
+
+    curated_regions = load_curated_hotspots(settings.curated_hotspots_path).get(
+        gene_symbol.upper(), []
+    )
+
+    _notify(on_progress, "querying UniProt")
+    uniprot_started_at = datetime.now(UTC)
+    uniprot_regions: list[ProteinRegion] = []
+    try:
+        async with UniProtClient(settings) as uniprot_client:
+            uniprot_regions = await uniprot_client.fetch_domains(gene_symbol)
+        queries.append(
+            DatabaseQueryRecord(
+                database="UniProt",
+                query_description="fetch_domains",
+                parameters={"gene_symbol": gene_symbol},
+                timestamp=uniprot_started_at,
+                success=True,
+            )
+        )
+    except AlleleIQError as exc:
+        queries.append(
+            DatabaseQueryRecord(
+                database="UniProt",
+                query_description="fetch_domains",
+                parameters={"gene_symbol": gene_symbol},
+                timestamp=uniprot_started_at,
+                success=False,
+                error_message=str(exc),
+            )
+        )
+        logger.warning(
+            "UniProt domain lookup failed", extra={"gene_symbol": gene_symbol, "error": str(exc)}
+        )
+
+    domain_regions = [*curated_regions, *uniprot_regions]
+
+    nearby_matches: list[ClinVarPositionalMatch] = []
+    if include_clinvar and vep_annotation is not None and vep_annotation.hgvs_p:
+        window_bp = settings.pm1_hotspot_window_aa * 3
+        start = max(1, variant.coordinates.pos - window_bp)
+        end = variant.coordinates.pos + window_bp
+        clinvar_started_at = datetime.now(UTC)
+        try:
+            async with ClinVarClient(settings) as clinvar_client:
+                nearby_matches = await clinvar_client.search_same_position(
+                    chrom=variant.coordinates.chrom, start=start, end=end
+                )
+            queries.append(
+                DatabaseQueryRecord(
+                    database="ClinVar",
+                    query_description="search_same_position (PM1 hotspot window)",
+                    parameters={"variant_id": variant.variant_id, "window_bp": str(window_bp)},
+                    timestamp=clinvar_started_at,
+                    success=True,
+                )
+            )
+        except AlleleIQError as exc:
+            queries.append(
+                DatabaseQueryRecord(
+                    database="ClinVar",
+                    query_description="search_same_position (PM1 hotspot window)",
+                    parameters={"variant_id": variant.variant_id, "window_bp": str(window_bp)},
+                    timestamp=clinvar_started_at,
+                    success=False,
+                    error_message=str(exc),
+                )
+            )
+            logger.warning(
+                "ClinVar PM1 hotspot-window search failed",
+                extra={"variant_id": variant.variant_id, "error": str(exc)},
+            )
+
+    return domain_regions, nearby_matches
+
+
 def _resolve_clingen(
     gene_symbol: str | None,
     settings: Settings,
@@ -427,6 +530,10 @@ async def build_evidence_report(
         gene_symbol_for_clingen, settings, queries, on_progress
     )
 
+    pm1_domain_regions, pm1_nearby_clinvar_matches = await _fetch_pm1_evidence(
+        variant, vep_annotation, settings, queries, on_progress, include_clinvar=include_clinvar
+    )
+
     variant = _merge_vep_into_variant(variant, vep_annotation)
     coverage_gaps, coverage_summary = assess_coverage(population_frequencies, settings)
 
@@ -443,6 +550,8 @@ async def build_evidence_report(
         revel_source=revel_source,
         clingen_classification=clingen_classification,
         clingen_haploinsufficiency_score=clingen_hi_score,
+        pm1_domain_regions=pm1_domain_regions,
+        pm1_nearby_clinvar_matches=pm1_nearby_clinvar_matches,
         settings=settings,
     )
 

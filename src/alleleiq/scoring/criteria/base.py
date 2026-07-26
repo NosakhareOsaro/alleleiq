@@ -19,6 +19,7 @@ from typing import ClassVar, Literal
 
 from alleleiq.clients.clinvar import ClinVarPositionalMatch, ClinVarSubmission
 from alleleiq.clients.gnomad import GeneConstraint
+from alleleiq.clients.uniprot import ProteinRegion
 from alleleiq.clients.vep import VEPAnnotation
 from alleleiq.config import Settings, get_settings
 from alleleiq.logging import get_logger
@@ -80,6 +81,26 @@ class CriterionContext:
             "variant's gene, resolved by ClinGenClient. None if not consulted; 0 if "
             "consulted but the gene is absent from ClinGen's dosage map or carries one "
             "of its two non-numeric special codes (see alleleiq.clients.clingen)."
+        },
+    )
+    pm1_domain_regions: list[ProteinRegion] = field(
+        default_factory=list,
+        metadata={
+            "description": "Merged curated-hotspot + UniProt-annotated domain/active-site/"
+            "binding-site regions for this variant's gene, resolved by "
+            "alleleiq.pipeline._fetch_pm1_evidence. Consumed by PM1 (see "
+            "alleleiq.scoring.criteria.hotspot). Empty if not consulted or if neither "
+            "source has data for this gene."
+        },
+    )
+    pm1_nearby_clinvar_matches: list[ClinVarPositionalMatch] = field(
+        default_factory=list,
+        metadata={
+            "description": "Classified ClinVar records within settings.pm1_hotspot_window_aa "
+            "(converted to an approximate genomic window) of this variant's genomic position, "
+            "resolved by ClinVarClient.search_same_position with a wider window than PS1/PM5 "
+            "use. Consumed by PM1's variant-density hotspot detection and disqualifying-"
+            "benign-variation check."
         },
     )
     inheritance_mode: Literal["dominant", "recessive"] | None = field(

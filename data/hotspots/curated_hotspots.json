@@ -1,0 +1,74 @@
+{
+  "TP53": [
+    {
+      "start_aa": 100,
+      "end_aa": 300,
+      "description": "DNA-binding domain, containing the great majority of recurrent pathogenic/somatic 'hotspot' codons (e.g. R175, G245, R248, R249, R273, R282)",
+      "source": "Well-established TP53 DNA-binding-domain mutational hotspot region; consistent with the IARC TP53 database's recurrent-codon findings. Curated snapshot, expert reconfirmation recommended."
+    }
+  ],
+  "RET": [
+    {
+      "start_aa": 609,
+      "end_aa": 634,
+      "description": "Cysteine-rich extracellular domain; MEN2A hotspot codons (C609, C611, C618, C620, C630, C634)",
+      "source": "Well-established RET MEN2A genotype-phenotype correlation. Curated snapshot, expert reconfirmation recommended."
+    },
+    {
+      "start_aa": 918,
+      "end_aa": 918,
+      "description": "Tyrosine kinase domain; M918T is the classic MEN2B hotspot codon",
+      "source": "Well-established RET MEN2B genotype-phenotype correlation. Curated snapshot, expert reconfirmation recommended."
+    }
+  ],
+  "FGFR3": [
+    {
+      "start_aa": 380,
+      "end_aa": 380,
+      "description": "Transmembrane domain; G380R is the classic achondroplasia hotspot codon",
+      "source": "Well-established FGFR3 achondroplasia genotype-phenotype correlation. Curated snapshot, expert reconfirmation recommended."
+    }
+  ],
+  "KRAS": [
+    {
+      "start_aa": 12,
+      "end_aa": 13,
+      "description": "P-loop GTPase domain; G12/G13 are classic RAS-pathway mutational hotspot codons",
+      "source": "Well-established RAS-pathway (RASopathy and oncogenic) hotspot codons. Curated snapshot, expert reconfirmation recommended."
+    },
+    {
+      "start_aa": 61,
+      "end_aa": 61,
+      "description": "GTPase domain; Q61 is a classic RAS-pathway mutational hotspot codon",
+      "source": "Well-established RAS-pathway (RASopathy and oncogenic) hotspot codon. Curated snapshot, expert reconfirmation recommended."
+    }
+  ],
+  "HRAS": [
+    {
+      "start_aa": 12,
+      "end_aa": 13,
+      "description": "P-loop GTPase domain; G12/G13 are classic RAS-pathway mutational hotspot codons (Costello syndrome)",
+      "source": "Well-established HRAS Costello syndrome genotype-phenotype correlation. Curated snapshot, expert reconfirmation recommended."
+    },
+    {
+      "start_aa": 61,
+      "end_aa": 61,
+      "description": "GTPase domain; Q61 is a classic RAS-pathway mutational hotspot codon",
+      "source": "Well-established RAS-pathway mutational hotspot codon. Curated snapshot, expert reconfirmation recommended."
+    }
+  ],
+  "RYR1": [
+    {
+      "start_aa": 614,
+      "end_aa": 614,
+      "description": "N-terminal MH1 domain region; R614C is a classic malignant hyperthermia susceptibility hotspot codon",
+      "source": "Well-established RYR1 malignant hyperthermia susceptibility hotspot codon. Curated snapshot, expert reconfirmation recommended."
+    },
+    {
+      "start_aa": 2435,
+      "end_aa": 2435,
+      "description": "Central MH2 domain region; R2435H is a classic malignant hyperthermia susceptibility hotspot codon",
+      "source": "Well-established RYR1 malignant hyperthermia susceptibility hotspot codon. Curated snapshot, expert reconfirmation recommended."
+    }
+  ]
+}

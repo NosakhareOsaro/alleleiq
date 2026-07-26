@@ -94,6 +94,51 @@ class Settings(BaseSettings):
         ),
     )
 
+    # ── UniProt REST client + curated hotspot list (PM1) ─────────────
+    uniprot_api_url: str = Field(default="https://rest.uniprot.org")
+    uniprot_timeout_seconds: float = Field(default=30.0, gt=0)
+    uniprot_max_retries: int = Field(default=3, ge=0)
+    curated_hotspots_path: str = Field(
+        default="data/hotspots/curated_hotspots.json",
+        description=(
+            "Path to the curated gene-symbol -> mutational-hotspot-region JSON "
+            "used by PM1 (see data/hotspots/README.md). A gene absent from this "
+            "file simply has one fewer PM1 evidence source consulted, not a "
+            "statement that it has no hotspots."
+        ),
+    )
+    pm1_hotspot_window_aa: int = Field(
+        default=5,
+        ge=0,
+        description=(
+            "Amino acids either side of a variant's protein position searched in "
+            "ClinVar for PM1's mutational-hotspot density check and its "
+            "disqualifying-benign-variation check (see "
+            "alleleiq.scoring.criteria.hotspot). Converted to an approximate "
+            "genomic base-pair window (3bp/codon) for the underlying ClinVar "
+            "query, the same codon-boundary approximation PS1/PM5 already "
+            "document — see same_position_window_bp."
+        ),
+    )
+    pm1_min_pathogenic_hotspot_count: int = Field(
+        default=3,
+        ge=1,
+        description=(
+            "Minimum number of independent, 2+-star Pathogenic/Likely Pathogenic "
+            "ClinVar records within pm1_hotspot_window_aa needed to treat a region "
+            "as a ClinVar-derived mutational hotspot, absent any domain annotation."
+        ),
+    )
+    pm1_max_allowed_benign_count: int = Field(
+        default=1,
+        ge=0,
+        description=(
+            "Maximum number of Benign/Likely Benign ClinVar records tolerated in "
+            "a candidate hotspot/domain region before PM1 is withheld as evidence "
+            "of benign variation in that region (ACMG/AMP PM1 guidance)."
+        ),
+    )
+
     # ── ClinVar (NCBI E-utilities) client ────────────────────────────
     clinvar_api_url: str = Field(default="https://eutils.ncbi.nlm.nih.gov/entrez/eutils")
     clinvar_api_key: str | None = Field(default=None)

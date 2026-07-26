@@ -14,6 +14,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from alleleiq.__version__ import VERSION
+from alleleiq.clients.clingen import ClinGenClient
 from alleleiq.clients.clinvar import ClinVarClient, ClinVarSubmission
 from alleleiq.clients.gnomad import GeneConstraint, GnomADClient
 from alleleiq.clients.revel import REVELClient
@@ -234,6 +235,41 @@ async def _fetch_revel(
         client.close()
 
 
+def _resolve_clingen(
+    gene_symbol: str | None,
+    settings: Settings,
+    queries: list[DatabaseQueryRecord],
+) -> tuple[str | None, int | None]:
+    """Resolve ClinGen gene-disease validity classification and haploinsufficiency score.
+
+    A local, synchronous file lookup (see :class:`~alleleiq.clients.clingen.ClinGenClient`)
+    rather than a network query, and one that degrades gracefully on its
+    own (missing bundled files log a warning and return None/0, they do
+    not raise) — so, unlike the other ``_fetch_*`` helpers, there is no
+    failure path to catch here. The lookup is still recorded in the
+    audit trail like every other evidence source consulted, since it is
+    a real bundled reference dataset a reviewer may want to see was used.
+    """
+    if not gene_symbol:
+        return None, None
+
+    started_at = datetime.now(UTC)
+    client = ClinGenClient(settings)
+    validity = client.get_disease_validity(gene_symbol)
+    hi_score = client.get_haploinsufficiency_score(gene_symbol)
+    queries.append(
+        DatabaseQueryRecord(
+            database="ClinGen",
+            query_description="get_disease_validity + get_haploinsufficiency_score",
+            parameters={"gene_symbol": gene_symbol},
+            timestamp=started_at,
+            success=True,
+        )
+    )
+    classification = validity.classification if validity is not None else None
+    return classification, hi_score
+
+
 def _merge_vep_into_variant(variant: Variant, vep_annotation: VEPAnnotation | None) -> Variant:
     """Fill in gene/transcript/HGVS/consequence from VEP if the parsed variant lacked them."""
     if vep_annotation is None:
@@ -283,6 +319,13 @@ async def build_evidence_report(
 
     revel_score, revel_source = await _fetch_revel(variant, vep_annotation, settings, queries)
 
+    gene_symbol_for_clingen = (
+        vep_annotation.gene_symbol if vep_annotation else None
+    ) or variant.gene_symbol
+    clingen_classification, clingen_hi_score = _resolve_clingen(
+        gene_symbol_for_clingen, settings, queries
+    )
+
     variant = _merge_vep_into_variant(variant, vep_annotation)
     coverage_gaps, coverage_summary = assess_coverage(population_frequencies, settings)
 
@@ -295,6 +338,8 @@ async def build_evidence_report(
         clinvar_submission=clinvar_submission,
         revel_score=revel_score,
         revel_source=revel_source,
+        clingen_classification=clingen_classification,
+        clingen_haploinsufficiency_score=clingen_hi_score,
         settings=settings,
     )
 

@@ -65,6 +65,24 @@ class Settings(BaseSettings):
         ),
     )
 
+    # ── Local ClinGen gene-disease validity + dosage sensitivity lookup ─
+    clingen_gene_validity_path: str = Field(
+        default="data/clingen/gene_disease_validity.csv",
+        description=(
+            "Path to the bundled ClinGen Gene-Disease Validity CSV snapshot "
+            "(see scripts/update_clingen.sh). Missing file degrades PVS1's "
+            "haploinsufficiency-mechanism strength to the bundled fallback "
+            "gene list / gnomAD constraint path."
+        ),
+    )
+    clingen_dosage_path: str = Field(
+        default="data/clingen/dosage_sensitivity.tsv",
+        description=(
+            "Path to the bundled ClinGen Dosage Sensitivity Map TSV snapshot "
+            "(see scripts/update_clingen.sh)."
+        ),
+    )
+
     # ── ClinVar (NCBI E-utilities) client ────────────────────────────
     clinvar_api_url: str = Field(default="https://eutils.ncbi.nlm.nih.gov/entrez/eutils")
     clinvar_api_key: str | None = Field(default=None)

@@ -54,6 +54,25 @@ class CriterionContext:
         },
     )
     revel_source: str | None = None
+    clingen_classification: str | None = field(
+        default=None,
+        metadata={
+            "description": "Best ClinGen gene-disease-validity classification for this "
+            "variant's gene (e.g. 'Definitive'), resolved by ClinGenClient. None if the "
+            "gene has no ClinGen curation, or ClinGen was not consulted (e.g. a test "
+            "constructing CriterionContext directly) — PVS1 falls back to its bundled "
+            "gene list / gnomAD constraint check in either case."
+        },
+    )
+    clingen_haploinsufficiency_score: int | None = field(
+        default=None,
+        metadata={
+            "description": "ClinGen dosage-map haploinsufficiency score (0-3) for this "
+            "variant's gene, resolved by ClinGenClient. None if not consulted; 0 if "
+            "consulted but the gene is absent from ClinGen's dosage map or carries one "
+            "of its two non-numeric special codes (see alleleiq.clients.clingen)."
+        },
+    )
     inheritance_mode: Literal["dominant", "recessive"] | None = field(
         default=None,
         metadata={

@@ -179,3 +179,56 @@ class TestBP4:
 
         assert result.met is False
         assert result.requires_clinical_input is True
+
+
+class TestREVELClientIntegration:
+    """context.revel_score (as populated by pipeline.build_evidence_report via
+    REVELClient) takes precedence over vep_annotation.revel_score, since it may
+    have been resolved from AlleleIQ's local REVEL index rather than VEP's
+    incomplete REST coverage.
+    """
+
+    def test_revel_score_on_context_overrides_annotation_for_pp3(self) -> None:
+        ctx = CriterionContext(
+            variant=_variant(),
+            vep_annotation=_annotation(revel_score=0.50),
+            revel_score=0.95,
+        )
+
+        result = PP3Criterion().evaluate(ctx)
+
+        assert result.met is True
+        assert result.strength == EvidenceStrength.MODERATE
+
+    def test_revel_score_on_context_overrides_annotation_for_bp4(self) -> None:
+        ctx = CriterionContext(
+            variant=_variant(),
+            vep_annotation=_annotation(revel_score=0.50),
+            revel_score=0.05,
+        )
+
+        result = BP4Criterion().evaluate(ctx)
+
+        assert result.met is True
+        assert result.strength == EvidenceStrength.BENIGN_SUPPORTING
+
+    def test_falls_back_to_annotation_when_context_score_absent(self) -> None:
+        ctx = CriterionContext(
+            variant=_variant(), vep_annotation=_annotation(revel_score=0.95), revel_score=None
+        )
+
+        result = PP3Criterion().evaluate(ctx)
+
+        assert result.met is True
+        assert result.strength == EvidenceStrength.MODERATE
+
+    def test_context_score_used_even_without_annotation(self) -> None:
+        ctx = CriterionContext(variant=_variant(), vep_annotation=None, revel_score=0.95)
+
+        result = PP3Criterion().evaluate(ctx)
+
+        assert result.met is True
+        assert result.strength == EvidenceStrength.MODERATE
+        # No annotation means consequence is unknown, so the missense-specific
+        # "expected but absent" flag cannot apply; met=True either way here.
+        assert result.requires_clinical_input is False

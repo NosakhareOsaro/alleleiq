@@ -1,0 +1,59 @@
+site_name: AlleleIQ
+site_description: Population-inclusive evidence aggregation for clinical genomic variant interpretation
+site_url: https://nosakhareosaro.github.io/alleleiq/
+repo_url: https://github.com/NosakhareOsaro/alleleiq
+repo_name: NosakhareOsaro/alleleiq
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+
+nav:
+  - Home: index.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Data Models: architecture/data-models.md
+      - ACMG Framework: architecture/acmg-framework.md
+      - Population Model: architecture/population-model.md
+  - Clinical:
+      - Intended Use: clinical/intended-use.md
+      - ACGS 2024 Alignment: clinical/acgs-2024.md
+      - Safety Design: clinical/safety-design.md
+  - Guides:
+      - Getting Started: guides/getting-started.md
+      - Interpreting Reports: guides/interpreting-reports.md
+      - API Reference: guides/api-reference.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - tables
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+
+strict: true

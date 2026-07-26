@@ -6,7 +6,7 @@
 [![Licence](https://img.shields.io/badge/licence-Apache%202.0-green)](LICENSE)
 [![CI](https://github.com/NosakhareOsaro/alleleiq/actions/workflows/ci.yml/badge.svg)](https://github.com/NosakhareOsaro/alleleiq/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/badge/coverage-93%25-brightgreen)](https://github.com/NosakhareOsaro/alleleiq/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v0.1.0--alpha-blue)](https://github.com/NosakhareOsaro/alleleiq/releases/tag/v0.1.0-alpha.0)
+[![Release](https://img.shields.io/badge/release-v0.1.0--alpha.0-blue)](https://github.com/NosakhareOsaro/alleleiq/releases/tag/v0.1.0-alpha.0)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 > **AlleleIQ does not classify variants.** It aggregates evidence, applies

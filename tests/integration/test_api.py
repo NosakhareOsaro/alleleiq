@@ -106,6 +106,17 @@ def _single_snv_vcf_bytes() -> bytes:
     )
 
 
+def _multi_variant_vcf_bytes() -> bytes:
+    return (
+        b"##fileformat=VCFv4.2\n"
+        b"##reference=GRCh38\n"
+        b"##contig=<ID=13,length=114364328>\n"
+        b"#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+        b"13\t32340301\t.\tT\tC\t100\tPASS\t.\n"
+        b"13\t32340350\t.\tG\tA\t100\tPASS\t.\n"
+    )
+
+
 def _grch37_vcf_bytes() -> bytes:
     return (
         b"##fileformat=VCFv4.2\n"
@@ -147,6 +158,29 @@ class TestAnalyseSingleVariant:
 
         assert response.status_code == 422
         assert "GRCh37" in response.json()["detail"]
+
+
+class TestAnalyseBatch:
+    def test_multi_variant_vcf_returns_one_report_per_variant(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/v1/variants/analyse/batch",
+            files={"vcf_file": ("variants.vcf", _multi_variant_vcf_bytes(), "text/plain")},
+        )
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["total_variants"] == 2
+        assert body["successful"] == 2
+        assert len(body["reports"]) == 2
+        assert body["errors"] == []
+
+    def test_malformed_batch_vcf_returns_422(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/v1/variants/analyse/batch",
+            files={"vcf_file": ("bad.vcf", b"not a vcf", "text/plain")},
+        )
+
+        assert response.status_code == 422
 
 
 class TestHealthEndpoints:

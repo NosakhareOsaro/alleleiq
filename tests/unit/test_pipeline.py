@@ -18,6 +18,7 @@ import alleleiq.pipeline as pipeline_module
 from alleleiq.clients.clinvar import ClinVarClient
 from alleleiq.clients.gnomad import GnomADClient
 from alleleiq.clients.vep import VEPClient
+from alleleiq.models.evidence import EvidenceStrength
 from alleleiq.models.variant import GenomicCoordinates, Variant, VariantType
 from alleleiq.pipeline import build_evidence_report
 
@@ -90,6 +91,12 @@ def _variant() -> Variant:
     return Variant(coordinates=coords, variant_type=VariantType.SNV)
 
 
+def _stop_gained_variant() -> Variant:
+    # Coordinates match vep_stop_gained_response's "input" field (17 43093157 . C A . . .).
+    coords = GenomicCoordinates(chrom="17", pos=43093157, ref="C", alt="A")
+    return Variant(coordinates=coords, variant_type=VariantType.SNV)
+
+
 class TestBuildEvidenceReport:
     async def test_successful_run_populates_report_and_audit_trail(
         self,
@@ -140,3 +147,51 @@ class TestBuildEvidenceReport:
         # Coverage assessment must still run against the (empty) frequencies —
         # a failed query must never look identical to "no criteria assessed at all".
         assert report.coverage_summary is not None
+
+
+class TestClinGenIntegration:
+    """ClinGenClient is consulted for every variant with a resolved gene symbol and
+    recorded in the audit trail; its result flows into PVS1's mechanism tiering.
+
+    Uses the repository's real bundled ClinGen snapshot (data/clingen/, the
+    default settings path) rather than a mock, since BRCA1's real ClinGen
+    classification (Definitive, haploinsufficiency score 3) is a stable,
+    well-established curation unlikely to regress to a lower tier — this
+    doubles as a smoke test that the bundled data still supports BRCA1 at
+    full strength.
+    """
+
+    async def test_clingen_query_recorded_in_audit_trail(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        gnomad_brca2_response: dict[str, Any],
+        vep_stop_gained_response: list[dict[str, Any]],
+    ) -> None:
+        _patch_gnomad(monkeypatch, gnomad_brca2_response)
+        _patch_vep(monkeypatch, vep_stop_gained_response)
+        _patch_clinvar_not_found(monkeypatch)
+
+        report = await build_evidence_report(_stop_gained_variant())
+
+        clingen_queries = [q for q in report.audit_trail.queries if q.database == "ClinGen"]
+        assert len(clingen_queries) == 1
+        assert clingen_queries[0].success is True
+        assert clingen_queries[0].parameters["gene_symbol"] == "BRCA1"
+
+    async def test_clingen_classification_flows_into_pvs1_strength(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        gnomad_brca2_response: dict[str, Any],
+        vep_stop_gained_response: list[dict[str, Any]],
+    ) -> None:
+        _patch_gnomad(monkeypatch, gnomad_brca2_response)
+        _patch_vep(monkeypatch, vep_stop_gained_response)
+        _patch_clinvar_not_found(monkeypatch)
+
+        report = await build_evidence_report(_stop_gained_variant())
+
+        pvs1 = next(e for e in report.criterion_evaluations if e.code.value == "PVS1")
+        assert pvs1.met is True
+        assert pvs1.strength == EvidenceStrength.VERY_STRONG
+        assert pvs1.requires_clinical_input is False
+        assert "Definitive" in pvs1.evidence_basis

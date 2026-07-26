@@ -1,0 +1,18 @@
+{
+  "BADGENE": [
+    {
+      "start_aa": "not-a-number",
+      "end_aa": 180,
+      "description": "Malformed entry, should be skipped",
+      "source": "Fake gene: fixture source for malformed-entry rejection test."
+    }
+  ],
+  "GOODGENE": [
+    {
+      "start_aa": 10,
+      "end_aa": 20,
+      "description": "Valid sibling entry, should still load",
+      "source": "Fake gene: fixture source for malformed-entry rejection test."
+    }
+  ]
+}

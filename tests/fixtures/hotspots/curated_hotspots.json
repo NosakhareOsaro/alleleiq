@@ -1,0 +1,10 @@
+{
+  "HOTSPOTGENE": [
+    {
+      "start_aa": 170,
+      "end_aa": 180,
+      "description": "Fixture hotspot region for tests",
+      "source": "Fake gene: fixture source for PM1 curated-hotspot tests."
+    }
+  ]
+}

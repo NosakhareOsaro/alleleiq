@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}AlleleIQ{% endblock %}</title>
+  <link rel="stylesheet" href="/web-static/css/app.css">
+  <script src="/web-static/js/htmx.min.js" defer></script>
+  <script src="/web-static/js/htmx-sse.js" defer></script>
+</head>
+<body>
+  <!--
+    This banner is part of the shared base layout that every page in
+    src/alleleiq/web/templates/ extends -- there is no page in this
+    interface that can render without it. It is the presentational
+    counterpart to the disclaimer enforced at the model level on every
+    EvidenceReport (see alleleiq.models.report); that one cannot be
+    omitted because pydantic validation would reject a report without
+    it, this one cannot be omitted because it lives in the one layout
+    every page shares rather than being repeated (and skippable) per page.
+  -->
+  <div class="disclaimer-banner">
+    CLINICAL DECISION SUPPORT ONLY &mdash; NOT A CLINICAL CLASSIFICATION TOOL
+  </div>
+  <header class="max-w-4xl mx-auto px-4 py-6">
+    <h1 class="text-2xl font-bold"><a href="/" style="color:inherit;text-decoration:none;">AlleleIQ</a></h1>
+    <p class="text-sm text-gray-600">
+      Population-inclusive evidence aggregation for clinical genomic variant interpretation.
+      AlleleIQ aggregates evidence &mdash; it does not classify variants.
+    </p>
+  </header>
+  <main class="max-w-4xl mx-auto px-4 pb-16">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}AlleleIQ &mdash; Analyse a VCF{% endblock %}
+{% block content %}
+
+<section class="mb-8">
+  <h2 class="text-lg font-semibold mb-2">Evidence source connectivity</h2>
+  <ul class="flex gap-4 text-sm" style="list-style:none;padding:0;">
+    <li>gnomAD:
+      <span class="{{ 'status-ok' if gnomad_ok else 'status-down' }}">
+        {{ 'reachable' if gnomad_ok else 'unreachable' }}
+      </span>
+    </li>
+    <li>VEP:
+      <span class="{{ 'status-ok' if vep_ok else 'status-down' }}">
+        {{ 'reachable' if vep_ok else 'unreachable' }}
+      </span>
+    </li>
+    <li>ClinVar:
+      <span class="{{ 'status-ok' if clinvar_ok else 'status-down' }}">
+        {{ 'reachable' if clinvar_ok else 'unreachable' }}
+      </span>
+    </li>
+  </ul>
+  {% if not (gnomad_ok and vep_ok and clinvar_ok) %}
+  <p class="text-xs status-degraded mt-2">
+    One or more evidence sources is currently unreachable. Analysis will still run --
+    affected criteria will be reported as <code>requires_clinical_input</code> rather than
+    silently skipped -- but results may be less complete than usual.
+  </p>
+  {% endif %}
+</section>
+
+<!--
+  This <form> is a real, complete HTML form: method="post",
+  action="/analyse", enctype="multipart/form-data". It functions with
+  JavaScript entirely disabled -- a plain submit reloads the page with
+  the full result.html response. The hx-* attributes below are pure
+  progressive enhancement layered on top: when htmx is present, it
+  intercepts the same submit and swaps the response into #result
+  in-place instead of navigating away.
+-->
+<form method="post" action="/analyse" enctype="multipart/form-data"
+      hx-post="/analyse" hx-target="#result" hx-swap="innerHTML" hx-encoding="multipart/form-data"
+      id="analyse-form" class="upload-zone">
+  <p class="mb-4">Drag and drop a VCF file here, or choose a file:</p>
+  <input type="file" name="vcf_file" accept=".vcf,.vcf.gz" required>
+  <div class="mt-4 text-sm">
+    <label>
+      <input type="checkbox" name="include_clinvar" value="true" checked>
+      Include ClinVar context (not used in scoring; shown in the report's audit trail)
+    </label>
+  </div>
+  <button type="submit" class="btn-primary mt-4">Analyse</button>
+</form>
+
+<div id="result" class="mt-8"></div>
+
+<script>
+  // Progressive enhancement only: if JavaScript is disabled, the form
+  // above still works via a plain POST and full-page response.
+  (function () {
+    var zone = document.getElementById("analyse-form");
+    zone.addEventListener("dragover", function (e) {
+      e.preventDefault();
+      zone.classList.add("drag-over");
+    });
+    zone.addEventListener("dragleave", function () {
+      zone.classList.remove("drag-over");
+    });
+    zone.addEventListener("drop", function (e) {
+      e.preventDefault();
+      zone.classList.remove("drag-over");
+      var input = zone.querySelector('input[type="file"]');
+      if (e.dataTransfer && e.dataTransfer.files.length) {
+        input.files = e.dataTransfer.files;
+      }
+    });
+  })();
+</script>
+
+{% endblock %}

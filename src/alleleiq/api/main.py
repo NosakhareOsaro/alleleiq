@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from alleleiq.__version__ import VERSION
 from alleleiq.api.middleware import (
@@ -18,6 +20,9 @@ from alleleiq.api.routers import health, variants
 from alleleiq.clients.gnomad import GnomADClient
 from alleleiq.config import get_settings
 from alleleiq.logging import configure_logging, get_logger
+from alleleiq.web.router import router as web_router
+
+_WEB_STATIC_DIR = Path(__file__).parent.parent / "web" / "static"
 
 logger = get_logger(__name__)
 
@@ -82,6 +87,13 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router, prefix="/api/v1")
     app.include_router(variants.router, prefix="/api/v1")
+
+    # Mounted at /web-static (not /static) to avoid any future collision
+    # with a REST API resource path; the minimal web interface itself is
+    # mounted at the app root (see alleleiq.web.router) since it is the
+    # human-facing entry point, not a versioned API surface.
+    app.mount("/web-static", StaticFiles(directory=str(_WEB_STATIC_DIR)), name="web-static")
+    app.include_router(web_router)
 
     return app
 

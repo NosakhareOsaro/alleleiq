@@ -101,6 +101,7 @@ ignore = [
 # positive here, since FastAPI evaluates these per-request, not at
 # function-definition time.
 "src/alleleiq/api/routers/*.py" = ["B008"]
+"src/alleleiq/web/router.py" = ["B008"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["alleleiq"]

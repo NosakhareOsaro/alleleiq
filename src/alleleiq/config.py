@@ -145,6 +145,16 @@ class Settings(BaseSettings):
     api_rate_limit_per_hour: int = Field(default=100, gt=0)
     api_max_upload_bytes: int = Field(default=52_428_800, gt=0)
 
+    # ── Web interface ────────────────────────────────────────────────
+    web_reports_dir: str = Field(
+        default="./reports/web",
+        description=(
+            "Directory the web interface writes generated JSON/HTML reports "
+            "into, one subdirectory per analysis job (see alleleiq.web.router). "
+            "Independent of the CLI's --output-dir, which defaults to ./reports."
+        ),
+    )
+
     @field_validator("api_cors_allow_origins", mode="before")
     @classmethod
     def _split_csv(cls, value: object) -> object:

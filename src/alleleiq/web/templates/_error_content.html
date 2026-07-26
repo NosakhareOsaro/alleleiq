@@ -1,0 +1,15 @@
+<!--
+  Shared fragment, rendered both as a full page (error.html) and as an
+  HTMX fragment swapped into #result -- same reasoning as
+  _result_content.html. `message` is always a clinical-grade,
+  human-readable explanation derived from AlleleIQ's own exception
+  hierarchy (see alleleiq.exceptions and web/router.py's
+  _clinical_error_message()) -- never a raw exception string or
+  traceback, which could leak internal paths or be alarming/unclear to
+  a non-developer reviewing a failed upload.
+-->
+<div class="error-box">
+  <h2 class="text-lg font-semibold mb-2">This VCF could not be analysed</h2>
+  <p>{{ message }}</p>
+  <p class="text-sm mt-2"><a class="text-blue-600 underline" href="/">Try again</a></p>
+</div>

@@ -1,0 +1,61 @@
+<!--
+  Shared fragment rendered by two call sites in web/router.py:
+  - result.html (full page, extends base.html) for a plain form POST.
+  - directly, as an HTML fragment with no surrounding <html>/<body>, for
+    an HTMX swap into #result on the index page (selected via the
+    HX-Request request header -- see web/router.py's web_analyse()).
+  Keeping this as one included partial means the two response shapes
+  can never render different markup for the same underlying result.
+-->
+<h2 class="text-lg font-semibold mb-4">
+  Analysis result{{ "s" if results|length != 1 else "" }}
+  ({{ results|length }} variant{{ "s" if results|length != 1 else "" }} analysed{% if errors %}, {{ errors|length }} failed{% endif %})
+</h2>
+
+{% for item in results %}
+<article class="report-card">
+  <h3 class="font-mono text-sm text-gray-500 mb-2">{{ item.report.variant.variant_id }}</h3>
+  <p>
+    <strong>Preliminary classification:</strong>
+    {{ item.report.bayesian_score.preliminary_classification.value }}
+  </p>
+  <p class="text-xs text-gray-500">{{ item.report.clinical_disclaimer }}</p>
+
+  <div class="mt-4">
+    <!--
+      The HTML evidence report is rendered exactly once, by
+      alleleiq.reports.html_report.render_html_report, and written to
+      disk by ReportOrchestrator -- the same code path the CLI's
+      `alleleiq analyse` command uses. It is embedded here via <iframe>
+      (rather than inlined into this page's markup) because that
+      rendered output is itself a complete standalone HTML document
+      with its own <html>/<head>, so it cannot be spliced into this
+      page's DOM without either duplicating the report template or
+      producing invalid nested-<html> markup. The iframe gives a true
+      "rendered inline" view of the identical file the download link
+      below points at, with zero duplication between the two.
+    -->
+    <iframe class="report-frame" src="{{ item.html_url }}" title="Evidence report for {{ item.report.variant.variant_id }}"></iframe>
+  </div>
+
+  <div class="mt-2 flex gap-4 text-sm">
+    <a class="text-blue-600 underline" href="{{ item.json_url }}" download>Download JSON</a>
+    <a class="text-blue-600 underline" href="{{ item.html_url }}" download>Download HTML report</a>
+  </div>
+</article>
+{% endfor %}
+
+{% if errors %}
+<div class="error-box mb-8">
+  <h3 class="font-semibold mb-2">Variants that could not be analysed</h3>
+  <ul class="list-disc" style="padding-left:1.25rem;">
+    {% for error in errors %}
+    <li>{{ error }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if not results and not errors %}
+<div class="error-box">No variants were found in the uploaded file.</div>
+{% endif %}

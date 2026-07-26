@@ -124,6 +124,101 @@ class TestErrorHandling:
             await client.fetch_classification(rsid="rs80357382")
 
 
+_POSITIONAL_BATCH_XML = """<?xml version="1.0"?>
+<ClinVarResult-Set>
+  <VariationArchive VariationID="17661"
+    VariationName="NM_007294.4(BRCA1):c.5096G&gt;A (p.Arg1699Gln)"
+    Accession="VCV000017661" Version="18">
+    <ClassifiedRecord>
+      <Classifications>
+        <GermlineClassification DateLastEvaluated="2023-06-15">
+          <ReviewStatus>reviewed by expert panel</ReviewStatus>
+          <Description>Pathogenic</Description>
+        </GermlineClassification>
+      </Classifications>
+      <ClinicalAssertionList>
+        <ClinicalAssertion ID="1" />
+      </ClinicalAssertionList>
+    </ClassifiedRecord>
+  </VariationArchive>
+  <VariationArchive VariationID="17662"
+    VariationName="NM_007294.4(BRCA1):c.5095C&gt;T (p.Arg1699Trp)"
+    Accession="VCV000017662" Version="4">
+    <ClassifiedRecord>
+      <Classifications>
+        <GermlineClassification>
+          <ReviewStatus>criteria provided, multiple submitters, no conflicts</ReviewStatus>
+          <Description>Likely pathogenic</Description>
+        </GermlineClassification>
+      </Classifications>
+      <ClinicalAssertionList>
+        <ClinicalAssertion ID="1" />
+        <ClinicalAssertion ID="2" />
+      </ClinicalAssertionList>
+    </ClassifiedRecord>
+  </VariationArchive>
+</ClinVarResult-Set>
+"""
+
+
+class TestSearchSamePosition:
+    async def test_batch_esearch_and_efetch_parses_both_matches(self) -> None:
+        requested_terms: list[str] = []
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            if "esearch" in str(request.url):
+                requested_terms.append(request.url.params.get("term", ""))
+                return httpx.Response(200, json={"esearchresult": {"idlist": ["17661", "17662"]}})
+            assert request.url.params.get("id") == "17661,17662"
+            return httpx.Response(200, text=_POSITIONAL_BATCH_XML)
+
+        client = _client_with_transport(handler)
+
+        matches = await client.search_same_position(chrom="17", start=43094689, end=43094695)
+
+        assert len(matches) == 2
+        assert requested_terms[0] == "17[chr] AND 43094689:43094695[chrpos38]"
+
+        first, second = matches
+        assert first.accession == "VCV000017661"
+        assert first.protein_change == "Arg1699Gln"
+        assert first.clinical_significance == "Pathogenic"
+        assert first.star_rating == 3
+
+        assert second.accession == "VCV000017662"
+        assert second.protein_change == "Arg1699Trp"
+        assert second.clinical_significance == "Likely pathogenic"
+        assert second.star_rating == 2
+
+    async def test_no_hits_returns_empty_list_without_efetch(self) -> None:
+        efetch_called = False
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal efetch_called
+            if "esearch" in str(request.url):
+                return httpx.Response(200, json={"esearchresult": {"idlist": []}})
+            efetch_called = True
+            return httpx.Response(200, text=_POSITIONAL_BATCH_XML)
+
+        client = _client_with_transport(handler)
+
+        matches = await client.search_same_position(chrom="17", start=1, end=10)
+
+        assert matches == []
+        assert efetch_called is False
+
+    async def test_malformed_batch_xml_raises_clinvar_error(self) -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            if "esearch" in str(request.url):
+                return httpx.Response(200, json={"esearchresult": {"idlist": ["1"]}})
+            return httpx.Response(200, text="not xml <<<")
+
+        client = _client_with_transport(handler)
+
+        with pytest.raises(ClinVarError, match="malformed XML"):
+            await client.search_same_position(chrom="17", start=1, end=10)
+
+
 class TestHealthCheck:
     async def test_healthy_endpoint_returns_true(self) -> None:
         async def handler(request: httpx.Request) -> httpx.Response:

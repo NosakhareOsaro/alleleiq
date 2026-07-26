@@ -52,6 +52,50 @@ Prints the installed version, configured gnomAD/VEP/ClinVar endpoints,
 and live connectivity status for each — useful for confirming your
 network/proxy configuration before running a real analysis.
 
+## Setting up local REVEL scores (recommended)
+
+PP3 and BP4 (computational evidence of a deleterious or benign effect)
+depend on a REVEL score for missense variants. Ensembl VEP's REST API
+*can* serve one, but its `dbNSFP` plugin coverage is incomplete — many
+positions come back with no REVEL score at all, and PP3/BP4 then
+degrade to `requires_clinical_input` not because the evidence is
+genuinely absent, but because AlleleIQ couldn't retrieve it.
+
+Building a local, tabix-indexed copy of REVEL's own precomputed-scores
+dataset closes that gap — it has complete genome-wide coverage, and a
+lookup takes microseconds:
+
+```bash
+./scripts/download_revel.sh
+```
+
+This downloads REVEL v1.3 (GRCh38 coordinates) from the upstream Mount
+Sinai host, transforms it into a position-sorted TSV, and
+bgzip/tabix-indexes it into `data/revel_v1.3_all_chromosomes.tsv.gz`
+(plus a `.tbi` index alongside it).
+
+!!! note "Disk and time"
+    The source archive is roughly 670MB, and the extracted/transformed
+    working files are several GB before compression — the script needs
+    that much free space in a temporary directory (cleaned up
+    automatically), plus the final index size (a few hundred MB) in
+    your chosen output directory. It can take several minutes depending
+    on your connection. This step is entirely optional and only needs
+    to be run once per deployment host.
+
+Then point AlleleIQ at it:
+
+```bash
+# in .env
+ALLELEIQ_REVEL_DATA_PATH=./data/revel_v1.3_all_chromosomes.tsv.gz
+```
+
+If you skip this step, `ALLELEIQ_REVEL_DATA_PATH` is unset by default
+and PP3/BP4 fall back to whatever REVEL score (if any) VEP REST
+returns, and finally to `requires_clinical_input` if neither source has
+one — the same behaviour AlleleIQ had before this feature existed, so
+skipping it is safe, just less complete.
+
 ## Running the API locally
 
 ```bash

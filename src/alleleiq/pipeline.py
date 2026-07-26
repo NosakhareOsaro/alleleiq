@@ -30,6 +30,7 @@ from alleleiq.scoring.bayesian import accumulate_evidence
 from alleleiq.scoring.coverage import assess_coverage
 from alleleiq.scoring.criteria.base import CriterionContext, CriterionEvaluator
 from alleleiq.scoring.criteria.computational import BP4Criterion, PP3Criterion
+from alleleiq.scoring.criteria.gene_level import BP1Criterion, PP2Criterion
 from alleleiq.scoring.criteria.lof import PVS1Criterion
 from alleleiq.scoring.criteria.population_frequency import BA1Criterion, BS1Criterion, PM2Criterion
 from alleleiq.scoring.criteria.same_position import PM5Criterion, PS1Criterion
@@ -45,6 +46,8 @@ _EVALUATORS: tuple[CriterionEvaluator, ...] = (
     PVS1Criterion(),
     PS1Criterion(),
     PM5Criterion(),
+    PP2Criterion(),
+    BP1Criterion(),
 )
 
 

@@ -83,6 +83,17 @@ class Settings(BaseSettings):
         ),
     )
 
+    # ── Gene-level missense-mechanism annotations (PP2 / BP1) ────────
+    gene_annotations_path: str = Field(
+        default="data/gene_annotations/missense_constraint.json",
+        description=(
+            "Path to the curated gene-symbol -> missense-mechanism JSON "
+            "used by PP2/BP1 (see data/gene_annotations/README.md). A gene "
+            "absent from this file is not assessed by either criterion, "
+            "not assumed benign or pathogenic."
+        ),
+    )
+
     # ── ClinVar (NCBI E-utilities) client ────────────────────────────
     clinvar_api_url: str = Field(default="https://eutils.ncbi.nlm.nih.gov/entrez/eutils")
     clinvar_api_key: str | None = Field(default=None)

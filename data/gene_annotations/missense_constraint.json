@@ -1,0 +1,302 @@
+{
+  "ACTC1": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_dominant_negative",
+    "source": "Hypertrophic/dilated cardiomyopathy: missense variants in the actin sarcomere are the established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "APC": {
+    "pp2_applicable": false,
+    "bp1_applicable": true,
+    "mechanism": "loss_of_function_only",
+    "source": "Familial adenomatous polyposis: truncating loss-of-function variants are the predominant established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "APOB": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_structural",
+    "source": "Familial hypercholesterolaemia (familial defective apoB-100): missense variants in the LDL-receptor-binding domain (e.g. p.Arg3527Gln) are the established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "BRCA1": {
+    "pp2_applicable": false,
+    "bp1_applicable": true,
+    "mechanism": "loss_of_function_only",
+    "source": "ClinGen ENIGMA expert panel: most established pathogenic BRCA1 variants are truncating loss-of-function; PP2/BP1 usage follows ENIGMA specifications."
+  },
+  "BRCA2": {
+    "pp2_applicable": false,
+    "bp1_applicable": true,
+    "mechanism": "loss_of_function_only",
+    "source": "ClinGen ENIGMA expert panel: most established pathogenic BRCA2 variants are truncating loss-of-function; PP2/BP1 usage follows ENIGMA specifications."
+  },
+  "CACNA1S": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_gain_of_function",
+    "source": "Malignant hyperthermia susceptibility: missense variants are the established disease mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "CFTR": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_structural",
+    "source": "Cystic fibrosis: missense/in-frame variants (paradigmatically p.Phe508del) causing protein misfolding are the single most common pathogenic mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "CHEK2": {
+    "pp2_applicable": false,
+    "bp1_applicable": true,
+    "mechanism": "loss_of_function_only",
+    "source": "Moderate-penetrance breast cancer risk: truncating loss-of-function founder variants (e.g. c.1100delC) are the predominant established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "COL1A1": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_structural",
+    "source": "Osteogenesis imperfecta: glycine substitutions in the Gly-X-Y triple-helical repeat are the established pathogenic mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "COL1A2": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_structural",
+    "source": "Osteogenesis imperfecta: glycine substitutions in the Gly-X-Y triple-helical repeat are the established pathogenic mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "COL2A1": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_structural",
+    "source": "Type II collagenopathies (achondrogenesis, spondyloepiphyseal dysplasia): triple-helix glycine substitutions are the established pathogenic mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "COL4A5": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_structural",
+    "source": "Alport syndrome: glycine substitutions in the collagen IV triple-helical domain are a well-established pathogenic mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "DSP": {
+    "pp2_applicable": false,
+    "bp1_applicable": true,
+    "mechanism": "loss_of_function_only",
+    "source": "Arrhythmogenic cardiomyopathy / cardiocutaneous syndromes: truncating loss-of-function variants are the predominant established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "FBN1": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_structural",
+    "source": "Marfan syndrome: cysteine substitutions disrupting cbEGF-domain calcium binding are the established pathogenic mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "FGFR2": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_gain_of_function",
+    "source": "Craniosynostosis syndromes (Crouzon, Apert): gain-of-function missense variants are the established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "FGFR3": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_gain_of_function",
+    "source": "Achondroplasia / thanatophoric dysplasia / hypochondroplasia: gain-of-function missense variants at well-defined hotspot codons are the established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "HRAS": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_gain_of_function",
+    "source": "Costello syndrome: gain-of-function missense variants at well-defined hotspot codons are the established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "KCNH2": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_dominant_negative",
+    "source": "Long QT syndrome type 2: missense variants, frequently causing channel trafficking defects, are a well-established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "KCNJ2": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_dominant_negative",
+    "source": "Andersen-Tawil syndrome: missense variants with dominant-negative effects on Kir2.1 channel function are the established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "KCNQ1": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_dominant_negative",
+    "source": "Long QT syndrome type 1: missense variants with dominant-negative effects on channel tetramerisation are the established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "KCNQ2": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_gain_of_function",
+    "source": "Self-limited familial neonatal epilepsy / KCNQ2-related developmental and epileptic encephalopathy: missense variants with dominant-negative or gain-of-function effects are the established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "KRAS": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_gain_of_function",
+    "source": "RASopathy (Noonan syndrome spectrum): gain-of-function missense variants at well-defined hotspot codons are the established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "LDLR": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_structural",
+    "source": "Familial hypercholesterolaemia: missense variants disrupting LDL-receptor ligand binding/recycling are the predominant established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "MEN1": {
+    "pp2_applicable": false,
+    "bp1_applicable": true,
+    "mechanism": "loss_of_function_only",
+    "source": "Multiple endocrine neoplasia type 1: truncating loss-of-function variants are the predominant established tumour-suppressor mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "MUTYH": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_structural",
+    "source": "MUTYH-associated polyposis: the two most common founder pathogenic alleles are missense substitutions, not truncating variants; curated snapshot, expert reconfirmation recommended."
+  },
+  "MYBPC3": {
+    "pp2_applicable": false,
+    "bp1_applicable": true,
+    "mechanism": "loss_of_function_only",
+    "source": "Hypertrophic cardiomyopathy: haploinsufficiency from truncating variants is the predominant established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "MYH7": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_dominant_negative",
+    "source": "Hypertrophic/dilated cardiomyopathy: missense variants in the motor/head domain acting via dominant-negative sarcomere disruption are the established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "NF1": {
+    "pp2_applicable": false,
+    "bp1_applicable": true,
+    "mechanism": "loss_of_function_only",
+    "source": "Neurofibromatosis type 1: truncating loss-of-function variants across this large tumour-suppressor gene are the predominant established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "NF2": {
+    "pp2_applicable": false,
+    "bp1_applicable": true,
+    "mechanism": "loss_of_function_only",
+    "source": "Neurofibromatosis type 2: truncating loss-of-function variants are the predominant established tumour-suppressor mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "PALB2": {
+    "pp2_applicable": false,
+    "bp1_applicable": true,
+    "mechanism": "loss_of_function_only",
+    "source": "Hereditary breast/pancreatic cancer: truncating loss-of-function variants are the predominant established mechanism; missense variants are usually classified VUS. Curated snapshot, expert reconfirmation recommended."
+  },
+  "PCSK9": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_gain_of_function",
+    "source": "Familial hypercholesterolaemia is caused by gain-of-function missense variants specifically (in contrast to loss-of-function PCSK9 variants, which are protective/hypocholesterolaemic); curated snapshot, expert reconfirmation recommended."
+  },
+  "PKP2": {
+    "pp2_applicable": false,
+    "bp1_applicable": true,
+    "mechanism": "loss_of_function_only",
+    "source": "Arrhythmogenic right ventricular cardiomyopathy: haploinsufficiency from truncating variants is the predominant established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "PTEN": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_structural",
+    "source": "PTEN hamartoma tumour syndrome: missense variants disrupting the phosphatase catalytic domain are a well-established mechanism alongside truncating variants; curated snapshot, expert reconfirmation recommended."
+  },
+  "PTPN11": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_gain_of_function",
+    "source": "Noonan syndrome: gain-of-function missense variants in the catalytic/N-SH2 interacting domains are the established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "RAF1": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_gain_of_function",
+    "source": "Noonan syndrome: gain-of-function missense variants are the established RASopathy mechanism for this gene; curated snapshot, expert reconfirmation recommended."
+  },
+  "RB1": {
+    "pp2_applicable": false,
+    "bp1_applicable": true,
+    "mechanism": "loss_of_function_only",
+    "source": "Retinoblastoma: truncating loss-of-function variants are the predominant established tumour-suppressor mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "RET": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_gain_of_function",
+    "source": "Multiple endocrine neoplasia type 2: gain-of-function missense variants at well-defined cysteine-rich and tyrosine-kinase-domain hotspot codons are the established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "RYR1": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_gain_of_function",
+    "source": "Malignant hyperthermia susceptibility / central core disease: missense variants clustering in defined hotspot regions are the established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "SCN5A": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "mixed",
+    "source": "Missense variants are a recognised mechanism for both Brugada syndrome (loss-of-function) and long QT syndrome type 3 (gain-of-function); phenotype-dependent, mechanistically heterogeneous. Curated snapshot, expert reconfirmation recommended."
+  },
+  "SDHB": {
+    "pp2_applicable": false,
+    "bp1_applicable": true,
+    "mechanism": "loss_of_function_only",
+    "source": "Hereditary paraganglioma-pheochromocytoma syndrome: truncating loss-of-function variants are the predominant established tumour-suppressor mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "SMAD4": {
+    "pp2_applicable": false,
+    "bp1_applicable": true,
+    "mechanism": "loss_of_function_only",
+    "source": "Juvenile polyposis syndrome: truncating loss-of-function variants are the predominant established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "SOS1": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_gain_of_function",
+    "source": "Noonan syndrome: gain-of-function missense variants are the established RASopathy mechanism for this gene; curated snapshot, expert reconfirmation recommended."
+  },
+  "STK11": {
+    "pp2_applicable": false,
+    "bp1_applicable": true,
+    "mechanism": "loss_of_function_only",
+    "source": "Peutz-Jeghers syndrome: truncating loss-of-function variants are the predominant established mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "TGFBR1": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_dominant_negative",
+    "source": "Loeys-Dietz syndrome: kinase-domain missense variants are the established dominant-negative mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "TGFBR2": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_dominant_negative",
+    "source": "Loeys-Dietz syndrome: kinase-domain missense variants are the established dominant-negative mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "TNNI3": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_dominant_negative",
+    "source": "Hypertrophic cardiomyopathy: missense variants are the predominant reported disease mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "TNNT2": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_dominant_negative",
+    "source": "Hypertrophic cardiomyopathy: missense variants altering troponin T-tropomyosin interaction are an established dominant-negative mechanism; curated snapshot, expert reconfirmation recommended."
+  },
+  "TP53": {
+    "pp2_applicable": true,
+    "bp1_applicable": false,
+    "mechanism": "missense_dominant_negative",
+    "source": "Li-Fraumeni syndrome: the majority of established germline pathogenic variants are missense substitutions clustering in the DNA-binding domain, acting via dominant-negative/loss-of-function effects; curated snapshot, expert reconfirmation recommended."
+  },
+  "TSC1": {
+    "pp2_applicable": false,
+    "bp1_applicable": true,
+    "mechanism": "loss_of_function_only",
+    "source": "Tuberous sclerosis complex: truncating loss-of-function variants are the predominant established mechanism for this gene; curated snapshot, expert reconfirmation recommended."
+  },
+  "TTN": {
+    "pp2_applicable": false,
+    "bp1_applicable": true,
+    "mechanism": "loss_of_function_only",
+    "source": "Dilated cardiomyopathy: haploinsufficiency from truncating variants (especially A-band, high-PSI exons) is the established mechanism; missense variants are common in the general population and are usually benign background variation. Curated snapshot, expert reconfirmation recommended."
+  }
+}

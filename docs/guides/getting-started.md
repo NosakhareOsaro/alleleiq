@@ -96,6 +96,40 @@ returns, and finally to `requires_clinical_input` if neither source has
 one — the same behaviour AlleleIQ had before this feature existed, so
 skipping it is safe, just less complete.
 
+## ClinGen gene-disease validity and dosage sensitivity
+
+PVS1 (null variant in a gene where loss-of-function is a known disease
+mechanism) needs two independent facts about a gene: how strongly it is
+established to cause *any* disease (ClinGen's Gene-Disease Validity
+classification — Definitive, Strong, Moderate, Limited, ...), and
+whether losing one copy of it is itself pathogenic (ClinGen's Dosage
+Sensitivity Map haploinsufficiency score, 0–3). Unlike REVEL, both
+datasets are small enough (~1.4MB combined) to ship bundled in this
+repository at `data/clingen/` — there is nothing to download before
+first use.
+
+ClinGen re-curates genes continuously as expert panels review more
+evidence, so the bundled snapshot should be refreshed periodically:
+
+```bash
+./scripts/update_clingen.sh
+```
+
+This re-downloads both files from ClinGen's own distribution endpoints
+and overwrites `data/clingen/gene_disease_validity.csv` and
+`data/clingen/dosage_sensitivity.tsv` in place. A weekly cadence is a
+reasonable default; always review `git diff -- data/clingen` before
+committing a refresh, since a classification change (e.g. a gene
+downgraded from Definitive to Disputed) changes which PVS1 strength
+tier that gene receives going forward. Also watch ClinGen's own
+[curation activity notes](https://clinicalgenome.org/curation-activities/)
+for changes that could affect how a *previously generated* AlleleIQ
+report for that gene should be re-read.
+
+If a gene has no ClinGen curation at all, PVS1 falls back to a small
+bundled fallback list plus gnomAD's own pLI/LOEUF constraint metrics —
+see `docs/architecture/acmg-framework.md` for the full tiering logic.
+
 ## Running the API locally
 
 ```bash

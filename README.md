@@ -154,8 +154,9 @@ databases) the reviewing scientist may wish to consult. See
 ## ACMG/AMP and ACGS 2024 alignment
 
 AlleleIQ implements the six ACMG/AMP criteria answerable from gnomAD, VEP,
-and gnomAD's own constraint metrics alone — `PVS1`, `BA1`, `BS1`, `PM2`,
-`PP3`, `BP4` — scored using the Tavtigian et al. (2020) Bayesian
+gnomAD's own constraint metrics, a local REVEL index, and ClinGen's
+bundled Gene-Disease Validity and Dosage Sensitivity datasets — `PVS1`,
+`BA1`, `BS1`, `PM2`, `PP3`, `BP4` — scored using the Tavtigian et al. (2020) Bayesian
 evidence-point system as adopted by the ACGS 2024 UK guidelines, including
 the ACGS-specific `PM2_Supporting` downgrade and tiered `PP3`/`BP4`
 computational thresholds. Every other ACMG/AMP criterion (PS1–PS4, PM1,

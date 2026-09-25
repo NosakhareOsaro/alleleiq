@@ -22,9 +22,9 @@ not because their variants are inherently more ambiguous — it is because
 the reference data needed to interpret them with confidence is
 systematically thinner or absent.
 
-No commercially available interpretation tool routinely reports
-per-ancestry evidence coverage or surfaces these gaps explicitly to the
-reviewing scientist. AlleleIQ does both, treating population coverage
+We are not aware of a commercially available interpretation tool that
+routinely reports per-ancestry evidence coverage or surfaces these gaps
+explicitly to the reviewing scientist. AlleleIQ does both, treating population coverage
 completeness as a first-class output alongside the evidence itself.
 
 ## What AlleleIQ does

@@ -28,9 +28,9 @@ East Asian, and Latino backgrounds receive a Variant of Uncertain
 Significance (VUS) result at 1.5–2x the rate of European patients. This is
 not because their variants are inherently more ambiguous — it is because
 the reference data needed to interpret them with confidence is
-systematically thinner or absent. No commercially available interpretation
-tool routinely reports per-ancestry evidence coverage or surfaces these
-gaps explicitly to the reviewing scientist.
+systematically thinner or absent. We are not aware of a commercially available
+interpretation tool that routinely reports per-ancestry evidence coverage
+or surfaces these gaps explicitly to the reviewing scientist.
 
 ## The approach
 

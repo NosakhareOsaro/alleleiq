@@ -21,7 +21,7 @@ Specific areas of concern for this codebase:
   filesystem/network path these are written to or transmitted over —
   AlleleIQ itself does not encrypt report output at rest.
 - **API authentication**: `alleleiq.api.dependencies.require_authenticated_caller`
-  is a documented no-op in v0.1.0-alpha. Do not expose the API directly
+  is a documented no-op in v0.2.0. Do not expose the API directly
   to an untrusted network without an authenticating layer in front of
   it. This is a known, intentional gap (see `docs/guides/api-reference.md`),
   not something to report as a new vulnerability — but deployment

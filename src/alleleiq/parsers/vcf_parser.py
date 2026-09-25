@@ -1,6 +1,6 @@
 """VCF parsing, normalisation, and validation.
 
-Known limitation (v0.1.0-alpha): this module performs *parsimonious*
+Known limitation: this module performs *parsimonious*
 indel normalisation — trimming shared trailing then leading bases
 between REF and ALT and adjusting POS accordingly — which correctly
 minimises the representation implied by the VCF record itself. It does

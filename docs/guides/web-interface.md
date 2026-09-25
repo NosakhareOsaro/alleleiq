@@ -7,7 +7,7 @@ presentation layer over the same `alleleiq.pipeline.build_evidence_report`
 entry point the CLI and JSON API use — it cannot compute a different
 result than either of them.
 
-!!! warning "No authentication in v0.1.0-alpha"
+!!! warning "No authentication in v0.2.0"
     Like the JSON API, the web interface has no authentication layer.
     Do not expose it directly to an untrusted network without an
     authenticating reverse proxy in front of it.

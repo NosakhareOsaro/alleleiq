@@ -1,8 +1,8 @@
 # Architecture Overview
 
 AlleleIQ is organised as five layers, each with a single responsibility,
-connected by one orchestration module (`alleleiq.pipeline`) that both the
-CLI and the REST API call identically.
+connected by one orchestration module (`alleleiq.pipeline`) that the
+CLI, the REST API, and the web interface all call identically.
 
 ```mermaid
 flowchart LR
@@ -14,16 +14,22 @@ flowchart LR
         Parser["alleleiq.parsers.vcf_parser<br/>normalisation + build validation"]
     end
 
-    subgraph "External evidence sources (alleleiq.clients)"
+    subgraph "Evidence sources (alleleiq.clients)"
         GNOMAD[GnomADClient<br/>per-ancestry frequencies + gene constraint]
-        VEP[VEPClient<br/>consequence, REVEL, SpliceAI]
-        CLINVAR[ClinVarClient<br/>curated classifications]
+        VEP[VEPClient<br/>consequence, HGVS, SpliceAI]
+        REVEL[REVELClient<br/>local tabix index, VEP fallback]
+        CLINVAR[ClinVarClient<br/>classifications + same-position records]
+        CLINGEN[ClinGenClient<br/>bundled validity + dosage snapshots]
+        UNIPROT[UniProtClient<br/>domains, active and binding sites]
     end
 
     subgraph "Scoring engine (alleleiq.scoring)"
-        POPCRIT["Population frequency criteria<br/>BA1 / BS1 / PM2"]
-        COMPCRIT["Computational criteria<br/>PP3 / BP4"]
-        LOFCRIT["Loss-of-function criterion<br/>PVS1"]
+        POPCRIT["Population frequency<br/>BA1 / BS1 / PM2"]
+        COMPCRIT["Computational<br/>PP3 / BP4"]
+        LOFCRIT["Loss of function<br/>PVS1"]
+        SAMEPOS["Same position<br/>PS1 / PM5"]
+        GENELVL["Gene level<br/>PP2 / BP1"]
+        HOTSPOT["Hotspot<br/>PM1"]
         COVERAGE[coverage.assess_coverage]
         BAYES[bayesian.accumulate_evidence]
     end
@@ -35,6 +41,7 @@ flowchart LR
     subgraph "Entry points"
         CLI[alleleiq.cli]
         API["alleleiq.api (FastAPI)"]
+        WEB["alleleiq.web (HTMX)"]
     end
 
     subgraph Output
@@ -44,14 +51,15 @@ flowchart LR
     end
 
     VCF --> Parser --> PIPE
-    PIPE --> GNOMAD & VEP & CLINVAR
+    PIPE --> GNOMAD & VEP & REVEL & CLINVAR & CLINGEN & UNIPROT
     GNOMAD --> COVERAGE
-    PIPE --> POPCRIT & COMPCRIT & LOFCRIT
+    PIPE --> POPCRIT & COMPCRIT & LOFCRIT & SAMEPOS & GENELVL & HOTSPOT
     COVERAGE --> BAYES
-    POPCRIT & COMPCRIT & LOFCRIT --> BAYES
+    POPCRIT & COMPCRIT & LOFCRIT & SAMEPOS & GENELVL & HOTSPOT --> BAYES
     BAYES --> PIPE
     CLI --> PIPE
     API --> PIPE
+    WEB --> PIPE
     PIPE --> JSON & HTML
     JSON & HTML --> REVIEW
 ```
@@ -68,7 +76,7 @@ than silently misinterpreting GRCh37 coordinates as GRCh38.
 
 ### 2. Evidence sources (`alleleiq.clients`)
 
-Three async HTTP clients, all built on a shared `BaseClient` (retry with
+Four async HTTP clients built on a shared `BaseClient` (retry with
 exponential backoff via `tenacity`, per-instance request throttling,
 structured request/response logging that never logs bodies):
 
@@ -77,7 +85,18 @@ structured request/response logging that never logs bodies):
 - `VEPClient` — Ensembl VEP REST, consequence, HGVS, exon position,
   REVEL, and SpliceAI.
 - `ClinVarClient` — NCBI E-utilities, curated classifications with
-  review-status star ratings.
+  review-status star ratings, plus same-position records for PS1, PM5,
+  and PM1.
+- `UniProtClient` — UniProt REST, annotated domains, active sites, and
+  binding sites for PM1.
+
+Two local lookups that read bundled or downloaded files rather than
+making a network request per variant:
+
+- `REVELClient` — a local tabix-indexed REVEL v1.3 file (built by
+  `scripts/download_revel.sh`), falling back to VEP's REST-served score.
+- `ClinGenClient` — bundled ClinGen Gene-Disease Validity and Dosage
+  Sensitivity snapshots (`data/clingen/`), driving PVS1 strength tiering.
 
 ### 3. Scoring (`alleleiq.scoring`)
 
@@ -103,6 +122,9 @@ directly, so they can never drift apart on how a variant is analysed.
   terminal output.
 - **API** (`alleleiq.api`): FastAPI, four endpoints under `/api/v1`, with
   request-context/rate-limit/size-limit middleware.
+- **Web interface** (`alleleiq.web`): a server-rendered upload-and-review
+  page at `/`, with HTMX as progressive enhancement — see
+  [Web Interface](../guides/web-interface.md).
 - **Reports** (`alleleiq.reports`): JSON and HTML renderers, both
   derived from the same `EvidenceReport` via
   `alleleiq.reports.json_report.report_to_dict`, so the two formats can

@@ -1,6 +1,6 @@
 """Shared FastAPI dependencies.
 
-Includes an authentication stub. AlleleIQ v0.1.0-alpha has no
+Includes an authentication stub. AlleleIQ v0.2.0 has no
 authentication implemented — this dependency is a documented
 placeholder for the access-control layer a real clinical deployment
 would require (e.g. NHS Care Identity Service / OAuth2 integration),
@@ -29,7 +29,7 @@ def get_settings_dependency() -> Settings:
 async def require_authenticated_caller() -> None:
     """Authentication stub.
 
-    Raises nothing and returns nothing in v0.1.0-alpha: every caller is
+    Raises nothing and returns nothing in v0.2.0: every caller is
     currently treated as authenticated. This is a placeholder, not a
     security control — do not deploy this release against real patient
     data behind a network boundary that does not enforce access control

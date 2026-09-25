@@ -34,8 +34,9 @@ gaps explicitly to the reviewing scientist.
 ## The approach
 
 AlleleIQ aggregates evidence from population frequency databases (gnomAD
-v4), in silico prediction tools (REVEL, SpliceAI via Ensembl VEP), and
-curated variant databases (ClinVar), then applies ACMG/AMP criteria as
+v4), in silico prediction tools (REVEL, SpliceAI via Ensembl VEP), curated
+variant databases (ClinVar), gene-level curation (ClinGen), and protein
+domain annotations (UniProt), then applies ACMG/AMP criteria as
 codified by ACGS 2024 guidance and the Tavtigian et al. (2020) Bayesian
 evidence-point framework. Every population-frequency-derived criterion is
 evaluated **per ancestry group**, never on an aggregated cross-population
@@ -57,16 +58,21 @@ flowchart LR
         Parser[VCF Parser<br/>normalisation + validation]
     end
 
-    subgraph "External evidence sources"
+    subgraph "Evidence sources"
         GNOMAD[gnomAD v4 GraphQL<br/>per-ancestry frequencies]
-        VEP[Ensembl VEP REST<br/>consequence, REVEL, SpliceAI]
+        VEP[Ensembl VEP REST<br/>consequence, SpliceAI]
+        REVEL[Local REVEL index<br/>VEP fallback]
         CLINVAR[ClinVar E-utilities<br/>curated classifications]
+        CLINGEN[ClinGen snapshots<br/>gene validity, dosage]
+        UNIPROT[UniProt REST<br/>protein domains]
     end
 
     subgraph "Scoring engine"
-        POPCRIT[Population frequency criteria<br/>BA1 / BS1 / PM2]
-        COMPCRIT[Computational criteria<br/>PP3 / BP4]
-        LOFCRIT[Loss-of-function criterion<br/>PVS1]
+        POPCRIT[Population frequency<br/>BA1 / BS1 / PM2]
+        COMPCRIT[Computational<br/>PP3 / BP4]
+        LOFCRIT[Loss of function<br/>PVS1]
+        CLINCRIT[Same position + hotspot<br/>PS1 / PM5 / PM1]
+        GENECRIT[Gene level<br/>PP2 / BP1]
         COVERAGE[Coverage gap assessor]
         BAYES[Bayesian evidence accumulator<br/>Tavtigian 2020]
     end
@@ -77,11 +83,14 @@ flowchart LR
         REVIEW[["Clinical Genetic Scientist<br/>(final classification)"]]
     end
 
-    VCF --> Parser --> POPCRIT & COMPCRIT & LOFCRIT
+    VCF --> Parser --> POPCRIT & COMPCRIT & LOFCRIT & CLINCRIT & GENECRIT
     GNOMAD --> POPCRIT & COVERAGE
     VEP --> COMPCRIT & LOFCRIT
-    CLINVAR --> BAYES
-    POPCRIT & COMPCRIT & LOFCRIT & COVERAGE --> BAYES
+    REVEL --> COMPCRIT
+    CLINGEN --> LOFCRIT
+    CLINVAR --> CLINCRIT
+    UNIPROT --> CLINCRIT
+    POPCRIT & COMPCRIT & LOFCRIT & CLINCRIT & GENECRIT & COVERAGE --> BAYES
     BAYES --> JSON & HTML
     JSON & HTML --> REVIEW
 ```

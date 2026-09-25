@@ -5,7 +5,7 @@ per-process fixed-window-ish limiter (a sliding window over a deque per
 client IP). It is adequate for a single-process deployment but does
 **not** share state across multiple workers or replicas — a real
 multi-worker production deployment needs a shared store (e.g. Redis).
-This is a known, documented scope limitation for v0.1.0-alpha, not an
+This is a known, documented scope limitation for v0.2.0, not an
 oversight.
 """
 

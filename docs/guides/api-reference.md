@@ -6,7 +6,7 @@ static companion covering the same endpoints.
 
 Base path: `/api/v1`
 
-!!! warning "No authentication in v0.1.0-alpha"
+!!! warning "No authentication in v0.2.0"
     `alleleiq.api.dependencies.require_authenticated_caller` is a
     documented stub — every caller is currently treated as
     authenticated. Do not expose this release directly to an untrusted
@@ -69,7 +69,7 @@ silently drop the entire batch's results.
 Liveness check. Always `200` if the process can respond at all.
 
 ```json
-{"status": "healthy", "version": "0.1.0-alpha"}
+{"status": "healthy", "version": "0.2.0"}
 ```
 
 ## `GET /api/v1/health/ready`

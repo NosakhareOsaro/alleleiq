@@ -9,7 +9,7 @@ is exactly the step that hides ancestry-specific coverage gaps, and
 AlleleIQ's entire clinical-equity value proposition depends on not taking
 it.
 
-Known limitation (v0.1.0-alpha): mitochondrial variants use a different
+Known limitation: mitochondrial variants use a different
 gnomAD schema (heteroplasmy-based, not diploid AC/AN) and are not yet
 supported; :meth:`GnomADClient.fetch_population_frequencies` raises
 :class:`~alleleiq.exceptions.GnomADError` for chrMT coordinates rather

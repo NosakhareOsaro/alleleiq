@@ -29,11 +29,13 @@ completeness as a first-class output alongside the evidence itself.
 ## What AlleleIQ does
 
 1. **Aggregates evidence** from gnomAD v4 (per-ancestry allele
-   frequencies), Ensembl VEP (consequence, REVEL, SpliceAI), and ClinVar
-   (curated classifications, weighted by review-status star rating).
-2. **Applies automatable ACMG/AMP criteria** — PVS1, BA1, BS1, PM2, PP3,
-   BP4 — per the Tavtigian et al. (2020) Bayesian point framework, as
-   adopted by ACGS 2024.
+   frequencies), Ensembl VEP (consequence, SpliceAI), a local REVEL index
+   (with VEP as fallback), ClinVar (curated classifications, weighted by
+   review-status star rating), bundled ClinGen gene-disease validity and
+   dosage-sensitivity snapshots, and UniProt protein domain annotations.
+2. **Applies eleven automatable ACMG/AMP criteria** — PVS1, BA1, BS1, PM2,
+   PP3, BP4, PS1, PM5, PP2, BP1, and PM1 — per the Tavtigian et al. (2020)
+   Bayesian point framework, as adopted by ACGS 2024.
 3. **Assesses population coverage** for every gnomAD v4 ancestry group
    independently, flagging under-covered populations rather than
    silently averaging them into an overall frequency.

@@ -90,7 +90,7 @@ Types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`, `perf`, `style`, `ci`
 ## Documentation requirements
 
 - Every public class, method, and function needs a Google-style
-  docstring (see `.claude`/existing modules for the house style: lead
+  docstring (see existing modules for the house style: lead
   with what it does, explain non-obvious *why* in the body, document
   `Args`/`Returns`/`Raises`).
 - A new or materially changed criterion, data source, or scoring rule

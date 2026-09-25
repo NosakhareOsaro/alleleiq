@@ -11,10 +11,11 @@
 
 ## The clinical problem
 
-Approximately 80% of the reference data underpinning clinical genomic
-interpretation — population allele frequencies, functional annotations,
-curated variant classifications — comes from individuals of European
-ancestry. As a direct consequence, patients from African, South Asian,
+Around 80% of participants in genomic studies are of European ancestry
+(Popejoy & Fullerton, *Nature* 2016), and the reference data underpinning
+clinical genomic interpretation — population allele frequencies,
+functional annotations, curated variant classifications — carries the
+same skew. As a consequence, patients from African, South Asian,
 East Asian, and Latino backgrounds receive a Variant of Uncertain
 Significance (VUS) result at 1.5–2x the rate of European patients. This is
 not because their variants are inherently more ambiguous — it is because

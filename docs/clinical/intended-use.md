@@ -1,8 +1,15 @@
 # Intended Use Statement
 
-**Document ID:** ALQ-REG-001
+**Document ID:** AIQ-REG-001 (summary)
 **Product:** AlleleIQ
-**Version:** 0.1.0-alpha
+**Document version:** 0.2 (draft)
+**Software version:** 0.2.0
+
+This page summarises the Intended Use Statement AIQ-REG-001 v0.2, which
+is maintained as a separate controlled document. It describes what the
+v0.2.0 software actually implements; where the full statement covers
+broader scope (for example CNV interpretation or literature evidence),
+that scope is not yet implemented here.
 
 ## Statement of intended use
 
@@ -11,8 +18,11 @@ qualified Clinical Genetic Scientists in the interpretation of germline
 genomic variants identified through next-generation sequencing. AlleleIQ:
 
 - Aggregates population frequency evidence (gnomAD v4), in silico
-  predictive evidence (REVEL, SpliceAI via Ensembl VEP), and curated
-  variant classification evidence (ClinVar) for a given variant.
+  predictive evidence (REVEL, from a local index or via Ensembl VEP, and
+  SpliceAI via Ensembl VEP), curated variant classification evidence
+  (ClinVar), gene-level curation (bundled ClinGen Gene-Disease Validity
+  and Dosage Sensitivity snapshots), and protein domain annotations
+  (UniProt) for a given variant.
 - Applies a defined subset of ACMG/AMP evidence criteria — as codified
   by ACGS 2024 — using the Tavtigian et al. (2020) Bayesian point
   framework, producing a **preliminary** evidence-point total and
@@ -51,9 +61,11 @@ AlleleIQ is specifically designed to surface rather than obscure.
 AlleleIQ is classified as:
 
 - **IVDR Class C**, under EU IVDR 2017/746 Annex VIII Rule 3(i)
-  (software providing information used to detect a physiological or
-  pathological state) and Rule 3(k) (software intended to provide
-  information for detecting a predisposition to a medical condition).
+  (devices intended for human genetic testing) and Rule 3(k) (devices
+  intended for the management of patients suffering from a
+  life-threatening disease or condition). InnoScot Health confirmed this
+  classification basis in correspondence dated 19 June 2026; Rule 2 is
+  not applicable.
 - **UK MDR 2002, Part IV, Annex II, List B**.
 
 This classification reflects that AlleleIQ provides decision-support
@@ -70,6 +82,6 @@ criteria out of scope, and the module docstrings in
 `alleleiq.clients.vep`, `alleleiq.clients.clinvar`, and
 `alleleiq.scoring.criteria.lof` for documented data-source and
 methodology limitations (e.g. mitochondrial variants unsupported,
-PVS1's transcript-specific-expression-region exclusion not checked, the
-bundled ClinGen gene-disease validity list is illustrative rather than
-exhaustive).
+PVS1's transcript-specific-expression-region exclusion not checked, and
+PVS1 falling back to a small bundled gene list or gnomAD constraint
+where ClinGen has no curation for the gene).

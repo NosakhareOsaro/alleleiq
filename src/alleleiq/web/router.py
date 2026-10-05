@@ -189,7 +189,10 @@ async def web_analyse(
     request: Request,
     vcf_file: UploadFile = File(..., description="A VCF file containing one or more variants."),
     genome_build: str = Form("GRCh38"),
-    include_clinvar: bool = Form(True),
+    # An unchecked HTML checkbox is omitted from the submission entirely, so the
+    # default must be False for unchecking the box to take effect. The form on
+    # index.html renders it checked.
+    include_clinvar: bool = Form(False),
     job_id: str = Form(
         "",
         description=(

@@ -68,7 +68,10 @@ def _parse_uploaded_vcf(path: Path, genome_build: str) -> tuple[list[Variant], P
 async def analyse_variant(
     vcf_file: UploadFile = File(..., description="A VCF file containing exactly one variant."),
     genome_build: str = Form("GRCh38", description="Genome build; GRCh38 only."),
-    include_clinvar: bool = Form(True, description="Whether to query ClinVar for context."),
+    include_clinvar: bool = Form(
+        True,
+        description="Whether to query ClinVar. PS1, PM5, and PM1's density signal need it.",
+    ),
     settings: Settings = Depends(get_settings_dependency),
 ) -> EvidenceReport:
     """Analyse a single variant and return its complete evidence report.
@@ -107,7 +110,10 @@ async def analyse_variant(
 async def analyse_batch(
     vcf_file: UploadFile = File(..., description="A VCF file containing one or more variants."),
     genome_build: str = Form("GRCh38", description="Genome build; GRCh38 only."),
-    include_clinvar: bool = Form(True, description="Whether to query ClinVar for context."),
+    include_clinvar: bool = Form(
+        True,
+        description="Whether to query ClinVar. PS1, PM5, and PM1's density signal need it.",
+    ),
     settings: Settings = Depends(get_settings_dependency),
 ) -> BatchAnalyseResponse:
     """Analyse every variant in a VCF and return one report per variant.

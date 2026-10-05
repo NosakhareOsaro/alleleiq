@@ -539,11 +539,10 @@ async def build_evidence_report(
         variant: The parsed variant to analyse.
         settings: Configuration to use; defaults to
             :func:`alleleiq.config.get_settings`.
-        include_clinvar: Whether to query ClinVar. ClinVar evidence is
-            surfaced in the report's audit trail but is not consumed by
-            any scoring criterion (see :mod:`alleleiq.scoring.criteria`),
-            so disabling it only affects report completeness, not the
-            preliminary classification.
+        include_clinvar: Whether to query ClinVar. PS1, PM5, and PM1's
+            variant-density signal depend on it, so disabling it leaves
+            those criteria unassessed and can change the preliminary
+            classification.
         on_progress: Optional callback invoked with a short stage
             description (``"querying gnomAD"``, ``"scoring"``, ...) as
             each evidence-gathering step starts. A no-op when omitted;

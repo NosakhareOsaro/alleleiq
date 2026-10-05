@@ -23,7 +23,7 @@ Analyse a single-variant VCF upload.
 |---|---|---|---|
 | `vcf_file` | file | required | A VCF containing exactly one variant. |
 | `genome_build` | string | `GRCh38` | Genome build; GRCh38 only. |
-| `include_clinvar` | bool | `true` | Whether to query ClinVar for context (ClinVar is not consumed by any scoring criterion — this only affects report completeness). |
+| `include_clinvar` | bool | `true` | Whether to query ClinVar. PS1, PM5, and PM1's variant-density signal depend on it; disabling it leaves those criteria unassessed and can change the preliminary classification. |
 
 **Response** — `200 OK`: an `EvidenceReport` (see
 [Data Models](../architecture/data-models.md)).

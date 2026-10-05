@@ -247,6 +247,50 @@ class TestWebAnalyse:
         get_settings.cache_clear()
 
 
+class TestClinVarToggle:
+    """An unchecked checkbox is omitted from a form submission, so leaving the
+    ClinVar box unchecked must actually disable ClinVar."""
+
+    @pytest.fixture
+    def recorded_flags(self, monkeypatch: pytest.MonkeyPatch) -> list[bool]:
+        import alleleiq.web.router as web_router_module
+
+        flags: list[bool] = []
+        real_build = web_router_module.build_evidence_report
+
+        async def spy(*args: Any, **kwargs: Any) -> Any:
+            flags.append(kwargs["include_clinvar"])
+            return await real_build(*args, **kwargs)
+
+        monkeypatch.setattr(web_router_module, "build_evidence_report", spy)
+        return flags
+
+    def test_unchecked_box_disables_clinvar(
+        self, client: TestClient, recorded_flags: list[bool]
+    ) -> None:
+        client.post(
+            "/analyse", files={"vcf_file": ("v.vcf", _single_snv_vcf_bytes(), "text/plain")}
+        )
+
+        assert recorded_flags == [False]
+
+    def test_checked_box_enables_clinvar(
+        self, client: TestClient, recorded_flags: list[bool]
+    ) -> None:
+        client.post(
+            "/analyse",
+            data={"include_clinvar": "true"},
+            files={"vcf_file": ("v.vcf", _single_snv_vcf_bytes(), "text/plain")},
+        )
+
+        assert recorded_flags == [True]
+
+    def test_index_renders_the_box_checked(self, client: TestClient) -> None:
+        response = client.get("/")
+
+        assert 'name="include_clinvar" value="true" checked' in response.text
+
+
 class TestDownloadReport:
     def test_download_json_and_html_reports(self, client: TestClient) -> None:
         analyse_response = client.post(

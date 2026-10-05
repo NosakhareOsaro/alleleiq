@@ -78,7 +78,7 @@ def cli() -> None:
 @click.option(
     "--no-clinvar",
     is_flag=True,
-    help="Skip ClinVar queries (faster; ClinVar is not used in scoring).",
+    help="Skip ClinVar queries (faster; PS1, PM5, and PM1's density signal go unassessed).",
 )
 def analyse(
     vcf_file: Path,

@@ -55,7 +55,7 @@ class TestPP3:
         ctx = CriterionContext(
             variant=_variant(),
             vep_annotation=_annotation(
-                most_severe_consequence="splice_donor_variant",
+                most_severe_consequence="splice_region_variant",
                 revel_score=None,
                 spliceai_ds_dl=0.6,
             ),
@@ -70,7 +70,7 @@ class TestPP3:
         ctx = CriterionContext(
             variant=_variant(),
             vep_annotation=_annotation(
-                most_severe_consequence="splice_donor_variant",
+                most_severe_consequence="splice_region_variant",
                 revel_score=None,
                 spliceai_ds_ag=0.25,
             ),
@@ -147,7 +147,7 @@ class TestBP4:
         ctx = CriterionContext(
             variant=_variant(),
             vep_annotation=_annotation(
-                most_severe_consequence="splice_donor_variant",
+                most_severe_consequence="synonymous_variant",
                 revel_score=None,
                 spliceai_ds_ag=0.01,
                 spliceai_ds_al=0.0,
@@ -179,6 +179,82 @@ class TestBP4:
 
         assert result.met is False
         assert result.requires_clinical_input is True
+
+
+class TestConsequenceAwareness:
+    """PP3/BP4 use only the scores that fit the variant's consequence (ClinGen SVI)."""
+
+    def test_canonical_splice_variant_does_not_double_count_with_pvs1(self) -> None:
+        ctx = CriterionContext(
+            variant=_variant(),
+            vep_annotation=_annotation(
+                most_severe_consequence="splice_donor_variant", spliceai_ds_dl=0.91
+            ),
+        )
+
+        result = PP3Criterion().evaluate(ctx)
+
+        assert result.met is False
+        assert result.requires_clinical_input is False
+        assert "PVS1" in result.evidence_basis
+
+    def test_stop_gained_never_gets_bp4_from_a_low_spliceai_score(self) -> None:
+        ctx = CriterionContext(
+            variant=_variant(),
+            vep_annotation=_annotation(most_severe_consequence="stop_gained", spliceai_ds_ag=0.01),
+        )
+
+        result = BP4Criterion().evaluate(ctx)
+
+        assert result.met is False
+        assert result.requires_clinical_input is False
+
+    def test_missense_with_intermediate_revel_and_no_splice_signal_is_not_bp4(self) -> None:
+        ctx = CriterionContext(
+            variant=_variant(),
+            vep_annotation=_annotation(revel_score=0.50, spliceai_ds_ag=0.01),
+        )
+
+        result = BP4Criterion().evaluate(ctx)
+
+        assert result.met is False
+
+    def test_missense_with_benign_revel_but_splice_signal_is_not_bp4(self) -> None:
+        ctx = CriterionContext(
+            variant=_variant(),
+            vep_annotation=_annotation(revel_score=0.05, spliceai_ds_dg=0.35),
+        )
+
+        result = BP4Criterion().evaluate(ctx)
+
+        assert result.met is False
+
+    def test_missense_with_benign_revel_and_no_splice_signal_is_bp4(self) -> None:
+        ctx = CriterionContext(
+            variant=_variant(),
+            vep_annotation=_annotation(revel_score=0.05, spliceai_ds_ag=0.02),
+        )
+
+        result = BP4Criterion().evaluate(ctx)
+
+        assert result.met is True
+
+    def test_revel_is_ignored_for_non_missense_consequences(self) -> None:
+        ctx = CriterionContext(
+            variant=_variant(),
+            vep_annotation=_annotation(
+                most_severe_consequence="synonymous_variant",
+                revel_score=0.95,
+                spliceai_ds_ag=0.01,
+            ),
+        )
+
+        pp3 = PP3Criterion().evaluate(ctx)
+        bp4 = BP4Criterion().evaluate(ctx)
+
+        assert pp3.met is False
+        assert "REVEL" not in pp3.evidence_basis
+        assert bp4.met is True
 
 
 class TestREVELClientIntegration:

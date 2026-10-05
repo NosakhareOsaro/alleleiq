@@ -62,7 +62,9 @@ _MODERATE_CLASSIFICATION = "Moderate"
 _MODERATE_HI_SCORE = 2
 _DISPUTED_OR_REFUTED = frozenset({"Disputed", "Refuted"})
 
-_LOF_CONSEQUENCES = frozenset(
+# Null-variant consequences PVS1 evaluates. Public because PP3/BP4 must not
+# add computational evidence on top of PVS1 for these variants.
+LOF_CONSEQUENCES = frozenset(
     {
         "stop_gained",
         "frameshift_variant",
@@ -180,7 +182,7 @@ class PVS1Criterion(CriterionEvaluator):
                 notes="Assess splicing impact via the SpliceAI-based PP3 criterion instead.",
             )
 
-        if consequence not in _LOF_CONSEQUENCES:
+        if consequence not in LOF_CONSEQUENCES:
             return CriterionEvaluation(
                 code=self.code,
                 strength=self.default_strength,

@@ -119,12 +119,27 @@ Classification bands: ≥10 Pathogenic · 6–9 Likely Pathogenic · 0–5 VUS �
 ClinVar expert-panel-reviewed variants. At the time of writing: 4/10
 directly concordant, 6/10 conservative (AlleleIQ lands on VUS where
 ClinVar has a definitive call), **0/10 dangerous** (no
-Pathogenic↔Benign direction flips), unchanged after adding PS1, PM5,
-PP2, BP1, and PM1 in v0.2.0. The 6 conservative cases are not
-failures — they are variants whose ClinVar classification depends on
-PS3 (functional studies) or PP1 (segregation) evidence AlleleIQ has no
-access to, or on a same-position/hotspot/gene-mechanism signal that
-happens not to apply to these particular ten variants. See the module
+Pathogenic↔Benign direction flips).
+
+The headline counts are unchanged by the scoring-correctness fixes
+(PS1/PM1 self-exclusion, recessive-gene PVS1, consequence-aware PP3/BP4,
+BP1 domain withholding), but the composition changed:
+
+- **Concordant (4):** the CFTR null allele (Pathogenic → Likely
+  Pathogenic via full-strength PVS1 for a definitive recessive gene —
+  the first correct pathogenic-direction call), and three Benign
+  variants (BRCA1 p.Met1361Leu via BP1, BRCA2 c.8754+75A>G via BP4,
+  PMS2 via BA1 + BP4).
+- **Conservative (6):** five Pathogenic variants that land on VUS, and
+  VHL p.Glu52Lys (Benign → VUS). VHL was previously "concordant" only
+  because BP4 fired on a SpliceAI score alone despite an intermediate
+  REVEL of 0.559 — right answer, wrong reason. Missense BP4 now needs
+  a benign REVEL as well, so it correctly drops to VUS.
+
+The conservative cases are not failures — they are variants whose
+ClinVar classification depends on PS3 (functional studies), PP1
+(segregation), or other evidence AlleleIQ has no access to. Ten
+variants is a sanity check, not a validation study. See the module
 docstring in
 `alleleiq.validation` for the full reasoning behind treating this as the
 *expected and safe* outcome of a criteria subset this size.

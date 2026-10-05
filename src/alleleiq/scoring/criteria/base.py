@@ -83,6 +83,15 @@ class CriterionContext:
             "of its two non-numeric special codes (see alleleiq.clients.clingen)."
         },
     )
+    clingen_recessive_gene: bool = field(
+        default=False,
+        metadata={
+            "description": "True when ClinGen's dosage map codes this gene 30 (gene "
+            "associated with an autosomal recessive phenotype). Haploinsufficiency scores "
+            "do not apply to such genes; PVS1 uses this to recognise biallelic loss of "
+            "function as the established mechanism."
+        },
+    )
     pm1_domain_regions: list[ProteinRegion] = field(
         default_factory=list,
         metadata={

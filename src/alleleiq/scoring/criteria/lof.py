@@ -13,6 +13,11 @@ as follows:
   2 -> a fixed Strong-strength PVS1 (below full strength, but not
   contingent on exon position — the classification ceiling, not
   transcript-truncation timing, is the limiting factor here).
+- **Definitive/Strong** gene-disease validity for a gene the dosage map
+  codes 30 (autosomal recessive phenotype) -> full-strength PVS1, flagged
+  ``requires_clinical_input``. Haploinsufficiency scores describe
+  single-copy sensitivity and do not apply to recessive genes, where
+  biallelic loss of function is the expected mechanism.
 - Any other combination (Limited/Disputed/Refuted/No Known Disease
   Relationship validity, a haploinsufficiency score below the tier
   thresholds, or the gene simply absent from ClinGen's curation) ->
@@ -124,6 +129,7 @@ class _MechanismTier:
     reason: str
     fixed_strength: bool = False
     note: str | None = None
+    requires_review: bool = False
 
 
 def _parse_exon(exon_field: str | None) -> tuple[int, int] | None:
@@ -239,6 +245,8 @@ class PVS1Criterion(CriterionEvaluator):
                         "applied at Strong rather than Very Strong strength."
                     ),
                     data_source=_DATA_SOURCE,
+                    requires_clinical_input=tier.requires_review,
+                    notes=tier.note,
                 )
 
         return CriterionEvaluation(
@@ -251,10 +259,16 @@ class PVS1Criterion(CriterionEvaluator):
                 "last/penultimate exon; full-strength PVS1 applies."
             ),
             data_source=_DATA_SOURCE,
-            notes=(
-                "Transcript-specific expression regions are not checked (no data source "
-                "integrated); confirm the affected exon is broadly expressed in "
-                "disease-relevant tissue."
+            requires_clinical_input=tier.requires_review,
+            notes=" ".join(
+                part
+                for part in (
+                    tier.note,
+                    "Transcript-specific expression regions are not checked (no data source "
+                    "integrated); confirm the affected exon is broadly expressed in "
+                    "disease-relevant tissue.",
+                )
+                if part
             ),
         )
 
@@ -272,6 +286,27 @@ class PVS1Criterion(CriterionEvaluator):
                 return _MechanismTier(
                     strength=EvidenceStrength.VERY_STRONG,
                     reason=f"ClinGen classification '{classification}', haploinsufficiency score 3",
+                )
+            if classification in _FULL_STRENGTH_CLASSIFICATIONS and context.clingen_recessive_gene:
+                # ClinGen's dosage map codes recessive genes 30 rather than scoring
+                # haploinsufficiency, which is a single-copy (dominant) concept. For a
+                # Definitive/Strong recessive gene, biallelic loss of function is the
+                # expected disease mechanism, so a null variant warrants full PVS1 —
+                # but the mechanism is inferred from inheritance rather than curated
+                # directly, so it is flagged for confirmation.
+                return _MechanismTier(
+                    strength=EvidenceStrength.VERY_STRONG,
+                    reason=(
+                        f"ClinGen classification '{classification}' for a gene ClinGen "
+                        "associates with an autosomal recessive phenotype"
+                    ),
+                    note=(
+                        "Loss-of-function mechanism inferred from autosomal recessive "
+                        "inheritance; confirm it against the gene's ClinGen curation, and "
+                        "remember a single null allele is diagnostic only in trans with a "
+                        "second pathogenic variant."
+                    ),
+                    requires_review=True,
                 )
             if classification == _MODERATE_CLASSIFICATION and hi_score == _MODERATE_HI_SCORE:
                 return _MechanismTier(

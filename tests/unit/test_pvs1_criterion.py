@@ -258,6 +258,51 @@ class TestClinGenMechanismTiers:
         assert result.notes is not None
         assert "Refuted" in result.notes
 
+    def test_definitive_recessive_gene_grants_full_strength_flagged_for_review(self) -> None:
+        """Dosage code 30 (autosomal recessive) normalises to HI score 0, but
+        biallelic loss of function is the expected mechanism for such genes."""
+        ctx = CriterionContext(
+            variant=_variant(gene_symbol="CFTR"),
+            vep_annotation=_annotation(gene_symbol="CFTR", exon="5/27"),
+            clingen_classification="Definitive",
+            clingen_haploinsufficiency_score=0,
+            clingen_recessive_gene=True,
+        )
+
+        result = PVS1Criterion().evaluate(ctx)
+
+        assert result.met is True
+        assert result.strength == EvidenceStrength.VERY_STRONG
+        assert result.requires_clinical_input is True
+        assert result.notes is not None and "recessive" in result.notes
+
+    def test_recessive_gene_still_downgraded_in_last_exon(self) -> None:
+        ctx = CriterionContext(
+            variant=_variant(gene_symbol="CFTR"),
+            vep_annotation=_annotation(gene_symbol="CFTR", exon="27/27"),
+            clingen_classification="Definitive",
+            clingen_haploinsufficiency_score=0,
+            clingen_recessive_gene=True,
+        )
+
+        result = PVS1Criterion().evaluate(ctx)
+
+        assert result.strength == EvidenceStrength.STRONG
+        assert result.requires_clinical_input is True
+
+    def test_limited_recessive_gene_stays_supporting(self) -> None:
+        ctx = CriterionContext(
+            variant=_variant(gene_symbol="SOMEGENE"),
+            vep_annotation=_annotation(gene_symbol="SOMEGENE", exon="5/23"),
+            clingen_classification="Limited",
+            clingen_haploinsufficiency_score=0,
+            clingen_recessive_gene=True,
+        )
+
+        result = PVS1Criterion().evaluate(ctx)
+
+        assert result.strength == EvidenceStrength.SUPPORTING
+
     def test_no_clingen_data_falls_back_to_bundled_list(self) -> None:
         """clingen_classification=None (the default) means ClinGen was not
         consulted or had no curation for this gene; PVS1 falls back to the

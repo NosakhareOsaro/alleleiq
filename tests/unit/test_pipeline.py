@@ -223,3 +223,13 @@ class TestClinGenIntegration:
         assert pvs1.strength == EvidenceStrength.VERY_STRONG
         assert pvs1.requires_clinical_input is False
         assert "Definitive" in pvs1.evidence_basis
+
+    def test_bundled_clingen_snapshot_marks_cftr_as_recessive(self) -> None:
+        """CFTR is Definitive in ClinGen and coded 30 (autosomal recessive) in the
+        bundled dosage map, so PVS1 can recognise its loss-of-function mechanism."""
+        classification, _hi_score, recessive = pipeline_module._resolve_clingen(
+            "CFTR", pipeline_module.get_settings(), []
+        )
+
+        assert classification == "Definitive"
+        assert recessive is True

@@ -40,6 +40,10 @@ from alleleiq.scoring.criteria.same_position import PM5Criterion, PS1Criterion
 
 logger = get_logger(__name__)
 
+# ClinGen dosage-map code for "gene associated with autosomal recessive phenotype"
+# (see alleleiq.clients.clingen._HI_SPECIAL_CODES).
+_HI_RECESSIVE_CODE = 30
+
 ProgressCallback = Callable[[str], None]
 """A synchronous, best-effort progress hook: called with a short stage
 description (e.g. ``"querying gnomAD"``) at each evidence-gathering
@@ -428,8 +432,8 @@ def _resolve_clingen(
     settings: Settings,
     queries: list[DatabaseQueryRecord],
     on_progress: ProgressCallback | None = None,
-) -> tuple[str | None, int | None]:
-    """Resolve ClinGen gene-disease validity classification and haploinsufficiency score.
+) -> tuple[str | None, int | None, bool]:
+    """Resolve ClinGen validity classification, haploinsufficiency score, and recessive flag.
 
     A local, synchronous file lookup (see :class:`~alleleiq.clients.clingen.ClinGenClient`)
     rather than a network query, and one that degrades gracefully on its
@@ -440,13 +444,15 @@ def _resolve_clingen(
     a real bundled reference dataset a reviewer may want to see was used.
     """
     if not gene_symbol:
-        return None, None
+        return None, None, False
 
     _notify(on_progress, "querying ClinGen")
     started_at = datetime.now(UTC)
     client = ClinGenClient(settings)
     validity = client.get_disease_validity(gene_symbol)
     hi_score = client.get_haploinsufficiency_score(gene_symbol)
+    dosage = client.get_dosage_sensitivity(gene_symbol)
+    recessive = dosage is not None and dosage.haploinsufficiency_raw_code == _HI_RECESSIVE_CODE
     queries.append(
         DatabaseQueryRecord(
             database="ClinGen",
@@ -457,7 +463,7 @@ def _resolve_clingen(
         )
     )
     classification = validity.classification if validity is not None else None
-    return classification, hi_score
+    return classification, hi_score, recessive
 
 
 def _merge_vep_into_variant(variant: Variant, vep_annotation: VEPAnnotation | None) -> Variant:
@@ -526,7 +532,7 @@ async def build_evidence_report(
     gene_symbol_for_clingen = (
         vep_annotation.gene_symbol if vep_annotation else None
     ) or variant.gene_symbol
-    clingen_classification, clingen_hi_score = _resolve_clingen(
+    clingen_classification, clingen_hi_score, clingen_recessive = _resolve_clingen(
         gene_symbol_for_clingen, settings, queries, on_progress
     )
 
@@ -550,6 +556,7 @@ async def build_evidence_report(
         revel_source=revel_source,
         clingen_classification=clingen_classification,
         clingen_haploinsufficiency_score=clingen_hi_score,
+        clingen_recessive_gene=clingen_recessive,
         pm1_domain_regions=pm1_domain_regions,
         pm1_nearby_clinvar_matches=pm1_nearby_clinvar_matches,
         settings=settings,

@@ -10,5 +10,18 @@
     "bp1_applicable": true,
     "mechanism": "loss_of_function_only",
     "source": "Fake gene: fixture source for BP1 tests."
+  },
+  "DOMAINGENE": {
+    "pp2_applicable": false,
+    "bp1_applicable": true,
+    "mechanism": "loss_of_function_only",
+    "source": "Fake gene: fixture source for BP1 domain-exclusion tests.",
+    "bp1_excluded_regions": [
+      {
+        "start_aa": 100,
+        "end_aa": 200,
+        "description": "a fixture domain"
+      }
+    ]
   }
 }

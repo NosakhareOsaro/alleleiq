@@ -71,12 +71,17 @@ def _cmd_set(args: argparse.Namespace) -> int:
         return 1
 
     gene_symbol = args.gene.upper()
-    data[gene_symbol] = {
+    entry: dict[str, object] = {
         "pp2_applicable": pp2_applicable,
         "bp1_applicable": bp1_applicable,
         "mechanism": args.mechanism,
         "source": args.source,
     }
+    # Domain exclusions are curated by hand-editing the file; keep them.
+    existing_regions = data.get(gene_symbol, {}).get("bp1_excluded_regions")
+    if existing_regions:
+        entry["bp1_excluded_regions"] = existing_regions
+    data[gene_symbol] = entry
     _save(path, data)
     print(f"Updated {gene_symbol} in {path} ({len(data)} genes total).")
     return 0

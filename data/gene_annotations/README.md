@@ -26,6 +26,15 @@ Scientist, not a substitute for checking the gene's current ClinGen
 curation or primary literature. Expert reconfirmation before clinical
 use is expected, and is noted per-gene in each entry's `source` field.
 
+## Domain exclusions for BP1
+
+An entry may carry `bp1_excluded_regions`: amino-acid ranges (key
+functional domains) inside which BP1 is withheld, because missense
+variants there can be pathogenic even in a loss-of-function gene. BRCA1
+and BRCA2 use the key domains from the ClinGen ENIGMA VCEP
+specifications. Edit these by hand; `scripts/update_gene_annotations.py
+set` preserves them.
+
 ## Extending the list
 
 Use `scripts/update_gene_annotations.py` to add or update entries. The

@@ -30,6 +30,7 @@ this gene", which is not a coherent claim the loader accepts.
 from __future__ import annotations
 
 import json
+import re
 from functools import lru_cache
 from pathlib import Path
 
@@ -39,6 +40,7 @@ from alleleiq.logging import get_logger
 from alleleiq.models.evidence import ACMGCode, CriterionEvaluation, EvidenceStrength
 
 from .base import CriterionContext, CriterionEvaluator
+from .same_position import extract_protein_change
 
 logger = get_logger(__name__)
 
@@ -50,6 +52,17 @@ _DATA_SOURCE = "Curated gene-level missense-mechanism annotations (data/gene_ann
 # list was not written to cover, so they are deliberately excluded rather
 # than assumed to behave like a missense_variant.
 _MISSENSE_CONSEQUENCE = "missense_variant"
+_CODON_NUMBER_PATTERN = re.compile(r"(\d+)")
+
+
+class ExcludedRegion(BaseModel):
+    """An amino-acid range in which a gene-level criterion must not be applied."""
+
+    model_config = ConfigDict(frozen=True)
+
+    start_aa: int
+    end_aa: int
+    description: str
 
 
 class GeneMechanismAnnotation(BaseModel):
@@ -62,6 +75,14 @@ class GeneMechanismAnnotation(BaseModel):
     mechanism: str
     source: str = Field(
         description="Citation-style rationale; see data/gene_annotations/README.md."
+    )
+    bp1_excluded_regions: list[ExcludedRegion] = Field(
+        default_factory=list,
+        description=(
+            "Key functional domains where missense variants can be pathogenic even in a "
+            "loss-of-function gene (e.g. ENIGMA's BRCA1/BRCA2 domains). BP1 is withheld "
+            "for missense variants inside them."
+        ),
     )
 
 
@@ -136,6 +157,59 @@ def _lookup(context: CriterionContext) -> tuple[str | None, GeneMechanismAnnotat
 def _is_missense(context: CriterionContext) -> bool:
     annotation = context.vep_annotation
     return annotation is not None and annotation.most_severe_consequence == _MISSENSE_CONSEQUENCE
+
+
+def _codon(context: CriterionContext) -> int | None:
+    annotation = context.vep_annotation
+    protein_change = extract_protein_change(annotation.hgvs_p if annotation else None)
+    match = _CODON_NUMBER_PATTERN.search(protein_change) if protein_change else None
+    return int(match.group(1)) if match else None
+
+
+def _bp1_withheld_reason(
+    context: CriterionContext, gene_annotation: GeneMechanismAnnotation
+) -> str | None:
+    """Why BP1 should not be applied to this missense variant, or None if it may be.
+
+    BP1's premise — missense is an implausible mechanism in this gene —
+    fails for missense variants inside key functional domains, and for
+    missense variants that are predicted to disrupt splicing (and so may
+    act as loss of function).
+    """
+    annotation = context.vep_annotation
+    if annotation is not None:
+        splice_scores = [
+            score
+            for score in (
+                annotation.spliceai_ds_ag,
+                annotation.spliceai_ds_al,
+                annotation.spliceai_ds_dg,
+                annotation.spliceai_ds_dl,
+            )
+            if score is not None
+        ]
+        threshold = context.settings.spliceai_pp3_supporting_threshold
+        if splice_scores and max(splice_scores) >= threshold:
+            return (
+                f"missense variant with a predicted splicing effect (max SpliceAI delta "
+                f"{max(splice_scores):.2f}) may act as loss of function"
+            )
+
+    if not gene_annotation.bp1_excluded_regions:
+        return None
+    codon = _codon(context)
+    if codon is None:
+        return (
+            "protein position unavailable, so it cannot be confirmed to lie outside the "
+            "gene's key functional domains"
+        )
+    for region in gene_annotation.bp1_excluded_regions:
+        if region.start_aa <= codon <= region.end_aa:
+            return (
+                f"codon {codon} lies within {region.description} (aa {region.start_aa}-"
+                f"{region.end_aa}), where missense variants can be pathogenic"
+            )
+    return None
 
 
 class PP2Criterion(CriterionEvaluator):
@@ -282,6 +356,18 @@ class BP1Criterion(CriterionEvaluator):
                 ),
                 data_source=_DATA_SOURCE,
                 requires_clinical_input=False,
+            )
+
+        withheld = _bp1_withheld_reason(context, gene_annotation)
+        if withheld is not None:
+            return CriterionEvaluation(
+                code=self.code,
+                strength=self.default_strength,
+                met=False,
+                evidence_basis=f"{gene_symbol}: {withheld}; BP1 withheld.",
+                data_source=_DATA_SOURCE,
+                requires_clinical_input=True,
+                notes=gene_annotation.source,
             )
 
         return CriterionEvaluation(

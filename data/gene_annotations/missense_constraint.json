@@ -21,13 +21,42 @@
     "pp2_applicable": false,
     "bp1_applicable": true,
     "mechanism": "loss_of_function_only",
-    "source": "ClinGen ENIGMA expert panel: most established pathogenic BRCA1 variants are truncating loss-of-function; PP2/BP1 usage follows ENIGMA specifications."
+    "source": "ClinGen ENIGMA BRCA1/2 VCEP specifications: pathogenic BRCA1 variants are predominantly truncating, so BP1 applies to missense variants outside the key functional domains (RING, coiled-coil, BRCT) with no predicted splicing effect. ENIGMA applies BP1 at Strong; AlleleIQ applies it at Supporting. Domain boundaries from the ENIGMA specification; reconfirm against the current version.",
+    "bp1_excluded_regions": [
+      {
+        "start_aa": 2,
+        "end_aa": 101,
+        "description": "the RING domain"
+      },
+      {
+        "start_aa": 1391,
+        "end_aa": 1424,
+        "description": "the coiled-coil domain"
+      },
+      {
+        "start_aa": 1650,
+        "end_aa": 1857,
+        "description": "the BRCT domains"
+      }
+    ]
   },
   "BRCA2": {
     "pp2_applicable": false,
     "bp1_applicable": true,
     "mechanism": "loss_of_function_only",
-    "source": "ClinGen ENIGMA expert panel: most established pathogenic BRCA2 variants are truncating loss-of-function; PP2/BP1 usage follows ENIGMA specifications."
+    "source": "ClinGen ENIGMA BRCA1/2 VCEP specifications: pathogenic BRCA2 variants are predominantly truncating, so BP1 applies to missense variants outside the key functional domains (PALB2-binding, DNA-binding) with no predicted splicing effect. ENIGMA applies BP1 at Strong; AlleleIQ applies it at Supporting. Domain boundaries from the ENIGMA specification; reconfirm against the current version.",
+    "bp1_excluded_regions": [
+      {
+        "start_aa": 10,
+        "end_aa": 40,
+        "description": "the PALB2-binding domain"
+      },
+      {
+        "start_aa": 2481,
+        "end_aa": 3186,
+        "description": "the DNA-binding domain"
+      }
+    ]
   },
   "CACNA1S": {
     "pp2_applicable": true,
@@ -39,7 +68,7 @@
     "pp2_applicable": true,
     "bp1_applicable": false,
     "mechanism": "missense_structural",
-    "source": "Cystic fibrosis: missense/in-frame variants (paradigmatically p.Phe508del) causing protein misfolding are the single most common pathogenic mechanism; curated snapshot, expert reconfirmation recommended."
+    "source": "Cystic fibrosis: missense variants (e.g. p.Gly551Asp, p.Arg117His) are a common pathogenic mechanism alongside the in-frame deletion p.Phe508del and truncating variants; curated snapshot, expert reconfirmation recommended."
   },
   "CHEK2": {
     "pp2_applicable": false,

@@ -133,6 +133,67 @@ class TestBP1Criterion:
         assert "missense" in result.evidence_basis.lower()
 
 
+def _domain_context(
+    hgvs_p: str | None, spliceai: float | None = None, gene: str = "DOMAINGENE"
+) -> CriterionContext:
+    return CriterionContext(
+        variant=_variant(gene),
+        vep_annotation=VEPAnnotation(
+            variant_id=_COORDS.variant_id,
+            most_severe_consequence="missense_variant",
+            gene_symbol=gene,
+            hgvs_p=hgvs_p,
+            spliceai_ds_ag=spliceai,
+        ),
+        settings=_settings(_FIXTURES / "missense_constraint.json"),
+    )
+
+
+class TestBP1Withholding:
+    def test_missense_inside_key_domain_is_withheld_for_review(self) -> None:
+        result = BP1Criterion().evaluate(_domain_context("ENSP1.1:p.Arg150Gly"))
+
+        assert result.met is False
+        assert result.requires_clinical_input is True
+        assert "codon 150" in result.evidence_basis
+
+    def test_missense_outside_key_domains_applies(self) -> None:
+        result = BP1Criterion().evaluate(_domain_context("ENSP1.1:p.Arg350Gly"))
+
+        assert result.met is True
+
+    def test_missing_protein_position_in_domain_gene_is_withheld(self) -> None:
+        result = BP1Criterion().evaluate(_domain_context(None))
+
+        assert result.met is False
+        assert result.requires_clinical_input is True
+
+    def test_predicted_splicing_effect_withholds_bp1(self) -> None:
+        result = BP1Criterion().evaluate(
+            _domain_context("ENSP1.1:p.Arg350Gly", spliceai=0.6, gene="BP1GENE")
+        )
+
+        assert result.met is False
+        assert result.requires_clinical_input is True
+        assert "splicing" in result.evidence_basis
+
+    def test_bundled_brca1_annotation_withholds_bp1_in_the_ring_domain(self) -> None:
+        ctx = CriterionContext(
+            variant=_variant("BRCA1"),
+            vep_annotation=VEPAnnotation(
+                variant_id=_COORDS.variant_id,
+                most_severe_consequence="missense_variant",
+                gene_symbol="BRCA1",
+                hgvs_p="ENSP00000350283.3:p.Cys61Gly",
+            ),
+        )
+
+        result = BP1Criterion().evaluate(ctx)
+
+        assert result.met is False
+        assert "RING" in result.evidence_basis
+
+
 class TestLoadGeneAnnotations:
     def test_loads_valid_entries(self) -> None:
         result = load_gene_annotations(str(_FIXTURES / "missense_constraint.json"))

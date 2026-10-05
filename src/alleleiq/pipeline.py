@@ -11,8 +11,10 @@ silently treating missing evidence as absence of evidence.
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Callable
 from datetime import UTC, datetime
+from pathlib import Path
 
 from alleleiq.__version__ import VERSION
 from alleleiq.clients.clingen import ClinGenClient
@@ -79,6 +81,7 @@ async def _fetch_gnomad_and_vep(
     variant: Variant,
     settings: Settings,
     queries: list[DatabaseQueryRecord],
+    versions: dict[str, str],
     on_progress: ProgressCallback | None = None,
 ) -> tuple[dict[AncestryGroup, PopulationFrequency], VEPAnnotation | None, GeneConstraint | None]:
     async with GnomADClient(settings) as gnomad_client, VEPClient(settings) as vep_client:
@@ -141,6 +144,9 @@ async def _fetch_gnomad_and_vep(
             logger.warning(
                 "VEP query failed", extra={"variant_id": variant.variant_id, "error": str(exc)}
             )
+        if vep_annotation is not None:
+            vep_release = await vep_client.fetch_release()
+            versions["vep"] = f"Ensembl {vep_release}" if vep_release else "unknown"
 
         gene_constraint: GeneConstraint | None = None
         gene_symbol = (
@@ -466,6 +472,45 @@ def _resolve_clingen(
     return classification, hi_score, recessive
 
 
+def _reference_data_versions(
+    settings: Settings, *, revel_source: str | None, clinvar_queried: bool, uniprot_queried: bool
+) -> dict[str, str]:
+    """Versions of the local and live reference data this report drew on.
+
+    Recorded so a reviewer can tell exactly which data informed the
+    evidence (IVDR Annex XIII 1.1 asks software devices to identify the
+    reference databases behind their decisions). Live sources without a
+    queryable release are labelled as such, with the audit trail's query
+    timestamps standing in for a version.
+    """
+    versions: dict[str, str] = {}
+    versions["revel"] = {
+        "local": "v1.3 (local index)",
+        "vep_rest": "via Ensembl VEP dbNSFP",
+    }.get(revel_source or "", "unavailable")
+    versions.update(ClinGenClient(settings).snapshot_versions())
+    for key, path in (
+        ("gene_annotations", settings.gene_annotations_path),
+        ("curated_hotspots", settings.curated_hotspots_path),
+    ):
+        digest = _file_digest(path)
+        if digest:
+            versions[key] = digest
+    if clinvar_queried:
+        versions["clinvar"] = "live E-utilities (see query timestamps)"
+    if uniprot_queried:
+        versions["uniprot"] = UniProtClient.release or "live REST (release not reported)"
+    return versions
+
+
+def _file_digest(path: str) -> str | None:
+    """Short content hash identifying a bundled curated data file's version."""
+    file_path = Path(path)
+    if not file_path.is_file():
+        return None
+    return "sha256:" + hashlib.sha256(file_path.read_bytes()).hexdigest()[:12]
+
+
 def _merge_vep_into_variant(variant: Variant, vep_annotation: VEPAnnotation | None) -> Variant:
     """Fill in gene/transcript/HGVS/consequence from VEP if the parsed variant lacked them."""
     if vep_annotation is None:
@@ -511,8 +556,9 @@ async def build_evidence_report(
     settings = settings or get_settings()
     queries: list[DatabaseQueryRecord] = []
 
+    versions: dict[str, str] = {"alleleiq": VERSION, "gnomad": settings.gnomad_dataset}
     population_frequencies, vep_annotation, gene_constraint = await _fetch_gnomad_and_vep(
-        variant, settings, queries, on_progress
+        variant, settings, queries, versions, on_progress
     )
 
     clinvar_submission = None
@@ -569,9 +615,17 @@ async def build_evidence_report(
         evaluations, overall_coverage_assessment=coverage_summary.overall_coverage_assessment
     )
 
+    versions.update(
+        _reference_data_versions(
+            settings,
+            revel_source=revel_source,
+            clinvar_queried=any(q.database == "ClinVar" and q.success for q in queries),
+            uniprot_queried=any(q.database == "UniProt" and q.success for q in queries),
+        )
+    )
     metadata = ReportMetadata(
         alleleiq_version=VERSION,
-        database_versions={"alleleiq": VERSION, "gnomad": settings.gnomad_dataset},
+        database_versions=versions,
         query_timestamps={query.database: query.timestamp for query in queries},
     )
 

@@ -67,6 +67,8 @@ class UniProtClient(BaseClient):
     """
 
     _cache: ClassVar[TTLCache] = TTLCache()
+    release: ClassVar[str | None] = None
+    """UniProt release (``X-UniProt-Release`` header) of the most recent live response."""
 
     def __init__(self, settings: Settings | None = None) -> None:
         """Initialise the client from application settings.
@@ -129,6 +131,9 @@ class UniProtClient(BaseClient):
         except httpx.HTTPError as exc:
             raise UniProtError(f"UniProt search failed for gene {gene_symbol!r}: {exc}") from exc
 
+        release = response.headers.get("X-UniProt-Release")
+        if release:
+            UniProtClient.release = release
         try:
             payload = response.json()
         except ValueError as exc:

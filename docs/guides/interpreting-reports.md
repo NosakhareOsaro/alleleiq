@@ -79,7 +79,10 @@ exactly where its own evidence runs out.
 
 Every upstream database query made while building this report —
 database, query description, timestamp, and success/failure — plus the
-evidence-source versions used (`gnomad_r4`, VEP release, etc.). Useful
+evidence-source versions used: the gnomAD dataset, the Ensembl release
+serving VEP, the REVEL source, the ClinGen snapshot dates, a content hash
+of each bundled curated file, and the UniProt release. ClinVar has no
+queryable release, so its query timestamps identify the data used. Useful
 for reproducibility and for understanding *why* a criterion came back
 `requires_clinical_input` (e.g. a failed ClinVar query, visible here,
 explains an empty ClinVar context elsewhere in the report).

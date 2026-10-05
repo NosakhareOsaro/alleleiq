@@ -157,3 +157,33 @@ class TestErrorHandling:
         client = _client_with_transport(handler)
         client._max_retries = 0
         assert await client.health_check() is False
+
+
+class TestFetchRelease:
+    async def test_parses_and_caches_release(self) -> None:
+        VEPClient._release = None
+        calls = 0
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal calls
+            calls += 1
+            assert request.url.path == "/info/software"
+            return httpx.Response(200, json={"release": 112})
+
+        try:
+            client = _client_with_transport(handler)
+            assert await client.fetch_release() == "112"
+            assert await client.fetch_release() == "112"
+            assert calls == 1
+        finally:
+            VEPClient._release = None
+
+    async def test_failure_returns_none_without_raising(self) -> None:
+        VEPClient._release = None
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            raise httpx.ConnectError("connection refused")
+
+        client = _client_with_transport(handler)
+        client._max_retries = 0
+        assert await client.fetch_release() is None

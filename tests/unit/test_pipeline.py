@@ -140,6 +140,13 @@ class TestBuildEvidenceReport:
         assert any(q.database == "gnomAD" and q.success for q in report.audit_trail.queries)
         assert any(q.database == "VEP" and q.success for q in report.audit_trail.queries)
         assert len(report.criterion_evaluations) == 11
+        versions = report.metadata.database_versions
+        assert versions["gnomad"] == "gnomad_r4"
+        assert "vep" in versions
+        assert versions["clingen_gene_validity"] == "2026-07-26"
+        assert versions["gene_annotations"].startswith("sha256:")
+        assert versions["curated_hotspots"].startswith("sha256:")
+        assert "revel" in versions
 
     async def test_skips_clinvar_when_disabled(
         self,

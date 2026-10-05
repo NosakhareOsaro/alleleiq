@@ -13,7 +13,7 @@ single float, so it must be parsed accordingly.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
 import httpx
 from pydantic import BaseModel, ConfigDict, Field
@@ -73,6 +73,8 @@ class VEPAnnotation(BaseModel):
 
 class VEPClient(BaseClient):
     """Async client for the Ensembl VEP REST API."""
+
+    _release: ClassVar[str | None] = None
 
     def __init__(self, settings: Settings | None = None) -> None:
         """Initialise the client from application settings.
@@ -152,6 +154,26 @@ class VEPClient(BaseClient):
             annotation = self._parse_entry(entry)
             annotations[annotation.variant_id] = annotation
         return annotations
+
+    async def fetch_release(self) -> str | None:
+        """Return the Ensembl release serving VEP annotations, e.g. ``"112"``.
+
+        Cached for the process lifetime (a release does not change under a
+        running analysis). Never raises: the release is provenance metadata
+        for the report, so a failed lookup is recorded as unknown rather
+        than aborting the analysis.
+        """
+        if VEPClient._release is not None:
+            return VEPClient._release
+        try:
+            response = await self._request("GET", "/info/software")
+            release = response.json().get("release")
+        except (httpx.HTTPError, ValueError, AttributeError):
+            return None
+        if release is None:
+            return None
+        VEPClient._release = str(release)
+        return VEPClient._release
 
     async def health_check(self) -> bool:
         """Check VEP REST API reachability via its ping endpoint."""

@@ -188,6 +188,23 @@ class ClinGenClient:
         dosage = self.get_dosage_sensitivity(gene_symbol)
         return dosage.haploinsufficiency_score if dosage is not None else 0
 
+    def snapshot_versions(self) -> dict[str, str]:
+        """Creation dates of the bundled snapshots, for report provenance.
+
+        Returns:
+            ``{"clingen_gene_validity": ..., "clingen_dosage": ...}`` with
+            each file's own creation-date header line, omitting any file
+            that is missing or has no recognisable date line.
+        """
+        versions: dict[str, str] = {}
+        validity_date = _first_header_value(self._validity_path, "FILE CREATED:")
+        if validity_date:
+            versions["clingen_gene_validity"] = validity_date
+        dosage_date = _dosage_snapshot_date(self._dosage_path)
+        if dosage_date:
+            versions["clingen_dosage"] = dosage_date
+        return versions
+
     def get_dosage_sensitivity(self, gene_symbol: str) -> DosageSensitivity | None:
         """Return the full dosage-map row for a gene, if curated.
 
@@ -328,5 +345,34 @@ def _parse_clingen_datetime(value: str | None) -> date | None:
         return None
     try:
         return datetime.fromisoformat(value.replace("Z", "+00:00")).date()
+    except ValueError:
+        return None
+
+
+def _first_header_value(path: Path, marker: str) -> str | None:
+    """Value after ``marker`` on the first matching line in a file's first few lines."""
+    if not path.exists():
+        return None
+    with path.open(encoding="utf-8") as handle:
+        for _ in range(10):
+            line = handle.readline()
+            if not line:
+                break
+            if marker in line:
+                return line.split(marker, 1)[1].strip().strip('",')
+    return None
+
+
+def _dosage_snapshot_date(path: Path) -> str | None:
+    """The dosage map's date line: the second ``#`` header line, e.g. ``#25 Jul,2026``."""
+    if not path.exists():
+        return None
+    with path.open(encoding="utf-8") as handle:
+        handle.readline()
+        line = handle.readline().strip()
+    if not line.startswith("#"):
+        return None
+    try:
+        return datetime.strptime(line.lstrip("#").strip(), "%d %b,%Y").date().isoformat()
     except ValueError:
         return None

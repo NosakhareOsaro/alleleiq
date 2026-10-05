@@ -103,3 +103,18 @@ class TestHaploinsufficiencyScore:
 
         assert client.get_haploinsufficiency_score("FAKEGENE1") == 0
         assert client.get_dosage_sensitivity("FAKEGENE1") is None
+
+
+class TestSnapshotVersions:
+    def test_reads_creation_dates_from_both_files(self) -> None:
+        assert _client().snapshot_versions() == {
+            "clingen_gene_validity": "2026-01-01",
+            "clingen_dosage": "2026-01-01",
+        }
+
+    def test_missing_files_are_omitted(self, tmp_path: Path) -> None:
+        settings = Settings(
+            clingen_gene_validity_path=str(tmp_path / "missing.csv"),
+            clingen_dosage_path=str(tmp_path / "missing.tsv"),
+        )
+        assert ClinGenClient(settings).snapshot_versions() == {}

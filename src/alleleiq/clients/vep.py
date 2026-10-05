@@ -166,7 +166,11 @@ class VEPClient(BaseClient):
         if VEPClient._release is not None:
             return VEPClient._release
         try:
-            response = await self._request("GET", "/info/software")
+            # Ensembl REST answers GET requests in HTML/YAML unless JSON is
+            # requested explicitly.
+            response = await self._request(
+                "GET", "/info/software", headers={"Content-Type": "application/json"}
+            )
             release = response.json().get("release")
         except (httpx.HTTPError, ValueError, AttributeError):
             return None

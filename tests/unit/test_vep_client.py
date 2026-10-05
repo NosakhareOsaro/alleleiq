@@ -168,6 +168,7 @@ class TestFetchRelease:
             nonlocal calls
             calls += 1
             assert request.url.path == "/info/software"
+            assert request.headers["Content-Type"] == "application/json"
             return httpx.Response(200, json={"release": 112})
 
         try:

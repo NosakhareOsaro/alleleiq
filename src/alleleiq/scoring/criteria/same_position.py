@@ -158,11 +158,47 @@ class PS1Criterion(CriterionEvaluator):
             )
 
         min_stars = context.settings.clinvar_min_stars_strong_evidence
+        coords = context.variant.coordinates
         same_change_hits = [m for m in matches if m.protein_change == protein_change]
-        established = [m for m in same_change_hits if _is_established_pathogenic(m, min_stars)]
+        # PS1 needs a *different* nucleotide change producing the same amino-acid
+        # change. A positional search returns this variant's own ClinVar record
+        # too, and counting it would let a variant's existing classification
+        # vouch for itself.
+        other_variant_hits = [
+            m
+            for m in same_change_hits
+            if m.is_same_variant(coords.pos, coords.ref, coords.alt) is False
+        ]
+        unverifiable_hits = [
+            m
+            for m in same_change_hits
+            if m.is_same_variant(coords.pos, coords.ref, coords.alt) is None
+        ]
+        established = [m for m in other_variant_hits if _is_established_pathogenic(m, min_stars)]
 
         if not established:
-            weak_hits = [m for m in same_change_hits if _is_any_pathogenic(m)]
+            unverifiable_established = [
+                m for m in unverifiable_hits if _is_established_pathogenic(m, min_stars)
+            ]
+            if unverifiable_established:
+                candidate = unverifiable_established[0]
+                return CriterionEvaluation(
+                    code=self.code,
+                    strength=self.default_strength,
+                    met=False,
+                    evidence_basis=(
+                        f"{protein_change} matches an established "
+                        f"{candidate.clinical_significance} ClinVar record "
+                        f"({candidate.accession}), but ClinVar did not report enough GRCh38 "
+                        "location detail to confirm it is a different nucleotide change from "
+                        "this variant; PS1 withheld pending manual review."
+                    ),
+                    data_source=_DATA_SOURCE,
+                    requires_clinical_input=True,
+                    notes="PS1 requires a distinct variant with the same amino-acid change; "
+                    "the matched record may be this variant's own ClinVar entry.",
+                )
+            weak_hits = [m for m in other_variant_hits if _is_any_pathogenic(m)]
             if weak_hits:
                 weakest = weak_hits[0]
                 return CriterionEvaluation(
@@ -185,8 +221,8 @@ class PS1Criterion(CriterionEvaluator):
                 strength=self.default_strength,
                 met=False,
                 evidence_basis=(
-                    f"No established Pathogenic/Likely Pathogenic ClinVar record shares "
-                    f"{protein_change}; PS1 not applicable."
+                    "No established Pathogenic/Likely Pathogenic ClinVar record for a "
+                    f"different variant shares {protein_change}; PS1 not applicable."
                 ),
                 data_source=_DATA_SOURCE,
                 requires_clinical_input=False,

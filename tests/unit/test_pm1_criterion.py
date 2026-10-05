@@ -38,7 +38,11 @@ def _match(
     clinical_significance: str,
     star_rating: int = 3,
     accession: str = "VCV000000001",
+    location: tuple[int, str, str] | None = (43094700, "C", "T"),
 ) -> ClinVarPositionalMatch:
+    """Build a nearby match. ``location`` defaults to a different variant from
+    ``_COORDS``; pass ``_COORDS`` values for the variant's own record."""
+    position, ref, alt = location if location is not None else (None, None, None)
     return ClinVarPositionalMatch(
         accession=accession,
         clinical_significance=clinical_significance,
@@ -47,6 +51,9 @@ def _match(
         submitter_count=1,
         variation_name="NM_000000.1(HOTSPOTGENE):c.524G>A (p.Arg175His)",
         protein_change="Arg175His",
+        genomic_position=position,
+        reference_allele=ref,
+        alternate_allele=alt,
     )
 
 
@@ -160,6 +167,41 @@ class TestPM1ClinVarDensityHotspot:
                 _match(clinical_significance="Pathogenic", star_rating=1, accession="VCV1"),
                 _match(clinical_significance="Pathogenic", star_rating=1, accession="VCV2"),
                 _match(clinical_significance="Pathogenic", star_rating=1, accession="VCV3"),
+            ],
+        )
+
+        result = PM1Criterion().evaluate(ctx)
+
+        assert result.met is False
+
+
+class TestPM1ExcludesTheVariantItself:
+    def test_variants_own_record_does_not_count_toward_density(self) -> None:
+        own = (_COORDS.pos, _COORDS.ref, _COORDS.alt)
+        ctx = CriterionContext(
+            variant=_variant(),
+            vep_annotation=_annotation(),
+            pm1_domain_regions=[],
+            pm1_nearby_clinvar_matches=[
+                _match(clinical_significance="Pathogenic", accession="VCV-SELF", location=own),
+                _match(clinical_significance="Pathogenic", accession="VCV1"),
+                _match(clinical_significance="Pathogenic", accession="VCV2"),
+            ],
+        )
+
+        result = PM1Criterion().evaluate(ctx)
+
+        assert result.met is False
+
+    def test_same_protein_change_without_location_is_treated_as_the_variant(self) -> None:
+        ctx = CriterionContext(
+            variant=_variant(),
+            vep_annotation=_annotation(),
+            pm1_domain_regions=[],
+            pm1_nearby_clinvar_matches=[
+                _match(clinical_significance="Pathogenic", accession="VCV-SELF", location=None),
+                _match(clinical_significance="Pathogenic", accession="VCV1"),
+                _match(clinical_significance="Pathogenic", accession="VCV2"),
             ],
         )
 

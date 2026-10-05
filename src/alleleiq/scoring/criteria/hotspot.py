@@ -138,6 +138,15 @@ def _codon_number(protein_change: str | None) -> int | None:
     return int(match.group(1)) if match else None
 
 
+def _is_this_variant(
+    match: ClinVarPositionalMatch, pos: int, ref: str, alt: str, protein_change: str | None
+) -> bool:
+    same = match.is_same_variant(pos, ref, alt)
+    if same is None:
+        return protein_change is not None and match.protein_change == protein_change
+    return same
+
+
 def _matching_region(codon: int, regions: list[ProteinRegion]) -> ProteinRegion | None:
     for region in regions:
         if region.start_aa <= codon <= region.end_aa:
@@ -181,7 +190,16 @@ class PM1Criterion(CriterionEvaluator):
             )
 
         settings = context.settings
-        matches = context.pm1_nearby_clinvar_matches
+        coords = context.variant.coordinates
+        # The variant's own ClinVar record falls inside its own search window;
+        # counting it would let an existing classification manufacture its own
+        # hotspot. A record without enough location detail to compare is
+        # treated as the variant itself only if it carries the same protein change.
+        matches = [
+            match
+            for match in context.pm1_nearby_clinvar_matches
+            if not _is_this_variant(match, coords.pos, coords.ref, coords.alt, protein_change)
+        ]
         min_stars = settings.clinvar_min_stars_strong_evidence
         benign_count = sum(1 for match in matches if _is_benign(match))
         pathogenic_count = sum(

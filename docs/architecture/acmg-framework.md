@@ -51,6 +51,13 @@ surfaced rather than hidden:
   *this variant's own* SpliceAI signal (the same scores PP3/BP4 already
   consult) as a conservative proxy, not a true comparison of mechanism
   between the two variants.
+- **The variant's own ClinVar record is excluded.** A positional search
+  returns the queried variant's own record too, and counting it would let
+  an existing classification vouch for itself. Records are compared on
+  ClinVar's GRCh38 VCF-style position and alleles; a same-change record
+  without that location detail cannot be confirmed as a *different*
+  variant, so PS1 is withheld with `requires_clinical_input=True`. PM1's
+  ClinVar-density count excludes the variant's own record the same way.
 - **Always `requires_clinical_input=True` when met.** Unlike BA1/PM2/PVS1,
   which can resolve to `requires_clinical_input=False` on a clean match,
   PS1 and PM5 never do — a same-position comparison always needs a human

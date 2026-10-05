@@ -130,6 +130,14 @@ _POSITIONAL_BATCH_XML = """<?xml version="1.0"?>
     VariationName="NM_007294.4(BRCA1):c.5096G&gt;A (p.Arg1699Gln)"
     Accession="VCV000017661" Version="18">
     <ClassifiedRecord>
+      <SimpleAllele>
+        <Location>
+          <SequenceLocation Assembly="GRCh37" positionVCF="41197714"
+            referenceAlleleVCF="C" alternateAlleleVCF="T" />
+          <SequenceLocation Assembly="GRCh38" positionVCF="43094692"
+            referenceAlleleVCF="G" alternateAlleleVCF="A" />
+        </Location>
+      </SimpleAllele>
       <Classifications>
         <GermlineClassification DateLastEvaluated="2023-06-15">
           <ReviewStatus>reviewed by expert panel</ReviewStatus>
@@ -184,11 +192,16 @@ class TestSearchSamePosition:
         assert first.protein_change == "Arg1699Gln"
         assert first.clinical_significance == "Pathogenic"
         assert first.star_rating == 3
+        assert first.genomic_position == 43094692
+        assert (first.reference_allele, first.alternate_allele) == ("G", "A")
+        assert first.is_same_variant(43094692, "G", "A") is True
+        assert first.is_same_variant(43094692, "G", "T") is False
 
         assert second.accession == "VCV000017662"
         assert second.protein_change == "Arg1699Trp"
         assert second.clinical_significance == "Likely pathogenic"
         assert second.star_rating == 2
+        assert second.is_same_variant(43094692, "G", "A") is None
 
     async def test_no_hits_returns_empty_list_without_efetch(self) -> None:
         efetch_called = False

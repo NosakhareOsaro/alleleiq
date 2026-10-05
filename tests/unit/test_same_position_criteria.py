@@ -37,7 +37,12 @@ def _match(
     clinical_significance: str = "Pathogenic",
     star_rating: int = 3,
     accession: str = "VCV000017661",
+    location: tuple[int, str, str] | None = (43094693, "C", "T"),
 ) -> ClinVarPositionalMatch:
+    """Build a match. ``location`` defaults to a different nucleotide change from
+    ``_COORDS``; pass ``_COORDS`` values for the variant's own record, or None for
+    a record without VCF-style location detail."""
+    position, ref, alt = location if location is not None else (None, None, None)
     return ClinVarPositionalMatch(
         accession=accession,
         clinical_significance=clinical_significance,
@@ -50,6 +55,9 @@ def _match(
             else "NM_007294.4(BRCA1):c.5096G>A"
         ),
         protein_change=protein_change,
+        genomic_position=position,
+        reference_allele=ref,
+        alternate_allele=alt,
     )
 
 
@@ -148,6 +156,61 @@ class TestPS1SameAminoAcidChange:
         assert result.met is False
         assert result.requires_clinical_input is True
         assert "splic" in result.evidence_basis.lower()
+
+
+class TestPS1ExcludesTheVariantItself:
+    def test_variants_own_clinvar_record_does_not_satisfy_ps1(self) -> None:
+        ctx = CriterionContext(
+            variant=_variant(),
+            vep_annotation=_annotation(),
+            same_position_clinvar_matches=[
+                _match(
+                    protein_change="Arg1699Gln",
+                    star_rating=3,
+                    location=(_COORDS.pos, _COORDS.ref, _COORDS.alt),
+                ),
+            ],
+        )
+
+        result = PS1Criterion().evaluate(ctx)
+
+        assert result.met is False
+        assert result.requires_clinical_input is False
+        assert "different variant" in result.evidence_basis
+
+    def test_own_record_ignored_but_distinct_established_record_still_applies(self) -> None:
+        ctx = CriterionContext(
+            variant=_variant(),
+            vep_annotation=_annotation(),
+            same_position_clinvar_matches=[
+                _match(
+                    protein_change="Arg1699Gln",
+                    accession="VCV-SELF",
+                    location=(_COORDS.pos, _COORDS.ref, _COORDS.alt),
+                ),
+                _match(protein_change="Arg1699Gln", accession="VCV-OTHER"),
+            ],
+        )
+
+        result = PS1Criterion().evaluate(ctx)
+
+        assert result.met is True
+        assert "VCV-OTHER" in result.evidence_basis
+
+    def test_record_without_location_detail_is_withheld_for_review(self) -> None:
+        ctx = CriterionContext(
+            variant=_variant(),
+            vep_annotation=_annotation(),
+            same_position_clinvar_matches=[
+                _match(protein_change="Arg1699Gln", star_rating=3, location=None),
+            ],
+        )
+
+        result = PS1Criterion().evaluate(ctx)
+
+        assert result.met is False
+        assert result.requires_clinical_input is True
+        assert "location detail" in result.evidence_basis
 
 
 class TestPM5DifferentAminoAcidChangeSameCodon:

@@ -101,6 +101,40 @@ class ClinVarPositionalMatch(ClinVarSubmission):
     genomic_position: int | None = Field(
         default=None, description="GRCh38 VCF-style position, if reported by ClinVar."
     )
+    reference_allele: str | None = Field(
+        default=None, description="GRCh38 VCF-style reference allele, if reported by ClinVar."
+    )
+    alternate_allele: str | None = Field(
+        default=None, description="GRCh38 VCF-style alternate allele, if reported by ClinVar."
+    )
+
+    def is_same_variant(self, pos: int, ref: str, alt: str) -> bool | None:
+        """Whether this record describes the given variant itself.
+
+        Positional searches are already chromosome-scoped, so only
+        position and alleles are compared.
+
+        Args:
+            pos: GRCh38 VCF-style position of the variant under review.
+            ref: Its VCF reference allele.
+            alt: Its VCF alternate allele.
+
+        Returns:
+            True if ClinVar's VCF-style GRCh38 coordinates match exactly,
+            False if they are known and differ, or None if ClinVar did not
+            report enough location detail to tell.
+        """
+        if (
+            self.genomic_position is None
+            or self.reference_allele is None
+            or self.alternate_allele is None
+        ):
+            return None
+        return (
+            self.genomic_position == pos
+            and self.reference_allele.upper() == ref.upper()
+            and self.alternate_allele.upper() == alt.upper()
+        )
 
 
 class ClinVarClient(BaseClient):
@@ -323,12 +357,14 @@ class ClinVarClient(BaseClient):
             return None
         variation_name = archive.get("VariationName") or ""
         protein_match = _PROTEIN_CHANGE_PATTERN.search(variation_name)
-        genomic_position = cls._extract_grch38_position(archive)
+        genomic_position, reference_allele, alternate_allele = cls._extract_grch38_location(archive)
         return ClinVarPositionalMatch(
             **fields,
             variation_name=variation_name,
             protein_change=protein_match.group(1) if protein_match else None,
             genomic_position=genomic_position,
+            reference_allele=reference_allele,
+            alternate_allele=alternate_allele,
         )
 
     @staticmethod
@@ -373,14 +409,27 @@ class ClinVarClient(BaseClient):
         )
 
     @staticmethod
-    def _extract_grch38_position(archive: Element) -> int | None:
+    def _extract_grch38_location(archive: Element) -> tuple[int | None, str | None, str | None]:
+        """GRCh38 VCF-style ``(position, ref, alt)`` from a VariationArchive.
+
+        Uses the ``positionVCF``/``referenceAlleleVCF``/``alternateAlleleVCF``
+        attributes, which describe the variant exactly as a VCF would. The
+        plain ``start`` attribute is a fallback for position only: it is not
+        VCF-anchored for indels, so no alleles are reported alongside it.
+        """
         location = archive.find(".//Location/SequenceLocation[@Assembly='GRCh38']")
         if location is None:
-            return None
-        raw = location.get("positionVCF") or location.get("start")
-        if raw is None:
-            return None
+            return None, None, None
+        raw_position = location.get("positionVCF")
+        reference = location.get("referenceAlleleVCF")
+        alternate = location.get("alternateAlleleVCF")
+        if raw_position is None:
+            raw_position = location.get("start")
+            reference = alternate = None
+        if raw_position is None:
+            return None, None, None
         try:
-            return int(raw)
+            position = int(raw_position)
         except ValueError:
-            return None
+            return None, None, None
+        return position, reference, alternate

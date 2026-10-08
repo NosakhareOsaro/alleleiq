@@ -18,6 +18,7 @@ from alleleiq.exceptions import (
     InsufficientEvidenceError,
     ReportGenerationError,
     ScoringError,
+    UniProtError,
     VariantParseError,
     VEPError,
 )
@@ -33,6 +34,7 @@ __all__ = [
     "InsufficientEvidenceError",
     "ReportGenerationError",
     "ScoringError",
+    "UniProtError",
     "VEPError",
     "VariantParseError",
     "__version__",

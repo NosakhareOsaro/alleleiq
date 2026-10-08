@@ -185,3 +185,11 @@ class TestBayesianScore:
             classification_confidence=ClassificationConfidence.LOW,
         )
         assert score.conflict_flags == []
+
+
+def test_uniprot_error_is_exported_from_the_package() -> None:
+    import alleleiq
+    from alleleiq.exceptions import DatabaseQueryError, UniProtError
+
+    assert alleleiq.UniProtError is UniProtError
+    assert issubclass(UniProtError, DatabaseQueryError)

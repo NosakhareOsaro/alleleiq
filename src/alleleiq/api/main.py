@@ -28,9 +28,11 @@ logger = get_logger(__name__)
 
 _API_DESCRIPTION = """
 AlleleIQ aggregates evidence from population frequency databases (gnomAD v4),
-in silico prediction tools (REVEL, SpliceAI via Ensembl VEP), and curated
-variant databases (ClinVar); applies ACMG/AMP criteria as codified by ACGS
-2024; and produces structured, ancestry-stratified evidence reports.
+in silico prediction tools (REVEL and SpliceAI, via a local REVEL index and
+Ensembl VEP), curated variant and gene databases (ClinVar, ClinGen gene-disease
+validity and dosage sensitivity), and protein-domain annotations (UniProt);
+applies 11 ACMG/AMP criteria as codified by ACGS 2024; and produces structured,
+ancestry-stratified evidence reports.
 
 **PRELIMINARY EVIDENCE SUMMARY — FOR CLINICAL SCIENTIST REVIEW ONLY.**
 This API does not classify variants. Every report requires review by a

@@ -199,6 +199,15 @@ class Settings(BaseSettings):
             "Independent of the CLI's --output-dir, which defaults to ./reports."
         ),
     )
+    web_reports_retention_hours: int = Field(
+        default=24,
+        ge=0,
+        description=(
+            "How long the web interface keeps a job's report directory before "
+            "deleting it. Expired jobs are removed when a new analysis starts. "
+            "0 keeps reports indefinitely."
+        ),
+    )
 
     @field_validator("api_cors_allow_origins", mode="before")
     @classmethod

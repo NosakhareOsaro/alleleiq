@@ -10,7 +10,9 @@ variant analysis.
 from __future__ import annotations
 
 import asyncio
+import shutil
 import tempfile
+import time
 import uuid
 from collections.abc import AsyncIterator
 from pathlib import Path
@@ -22,6 +24,7 @@ from fastapi.templating import Jinja2Templates
 from alleleiq.api.dependencies import get_settings_dependency
 from alleleiq.clients.clinvar import ClinVarClient
 from alleleiq.clients.gnomad import GnomADClient
+from alleleiq.clients.uniprot import UniProtClient
 from alleleiq.clients.vep import VEPClient
 from alleleiq.config import Settings
 from alleleiq.exceptions import AlleleIQError, ConfigurationError, VariantParseError
@@ -55,6 +58,15 @@ _ALLOWED_REPORT_SUFFIXES = (".json", ".html")
 _PROGRESS_SENTINEL = "__complete__"
 _progress_queues: dict[str, asyncio.Queue[str]] = {}
 
+# A queue is normally removed when its SSE subscriber finishes reading it.
+# If nobody subscribes, the analysing POST drops it after this grace period
+# instead, so unsubscribed jobs don't accumulate for the life of the process.
+_UNSUBSCRIBED_QUEUE_TTL_SECONDS = 60.0
+
+# An SSE subscriber gives up after this long without a message, so a
+# subscription to a job that never starts cannot hold a connection open forever.
+_PROGRESS_IDLE_TIMEOUT_SECONDS = 600.0
+
 
 def _get_or_create_progress_queue(job_id: str) -> asyncio.Queue[str]:
     """Return job_id's progress queue, creating it if this is the first touch.
@@ -66,6 +78,38 @@ def _get_or_create_progress_queue(job_id: str) -> asyncio.Queue[str]:
     if job_id not in _progress_queues:
         _progress_queues[job_id] = asyncio.Queue()
     return _progress_queues[job_id]
+
+
+def _release_progress_queue_later(job_id: str) -> None:
+    """Drop job_id's queue after a grace period, in case no subscriber ever reads it.
+
+    A subscriber that connects within the grace period still receives
+    every event, including the completion sentinel, and a subscriber
+    already reading keeps its own reference to the queue regardless.
+    """
+    asyncio.get_running_loop().call_later(
+        _UNSUBSCRIBED_QUEUE_TTL_SECONDS, _progress_queues.pop, job_id, None
+    )
+
+
+def _purge_expired_job_dirs(reports_dir: Path, retention_hours: int) -> None:
+    """Delete web job directories older than the retention period.
+
+    Only immediate subdirectories whose names are UUIDs are considered,
+    so nothing else that happens to live in the reports directory is
+    ever touched.
+    """
+    if retention_hours <= 0 or not reports_dir.is_dir():
+        return
+    cutoff = time.time() - retention_hours * 3600
+    for job_dir in reports_dir.iterdir():
+        try:
+            uuid.UUID(job_dir.name)
+        except ValueError:
+            continue
+        if job_dir.is_dir() and job_dir.stat().st_mtime < cutoff:
+            shutil.rmtree(job_dir, ignore_errors=True)
+            logger.info("expired web report directory removed", extra={"job_id": job_dir.name})
 
 
 def _make_progress_notifier(
@@ -134,16 +178,18 @@ def _clinical_error_message(exc: Exception) -> str:
 
 
 async def _connectivity_status(settings: Settings) -> dict[str, bool]:
-    """Check gnomAD/VEP/ClinVar reachability, the same checks `/api/v1/health/ready` uses."""
+    """Check evidence-source reachability, the same checks `/api/v1/health/ready` uses."""
     async with (
         GnomADClient(settings) as gnomad_client,
         VEPClient(settings) as vep_client,
         ClinVarClient(settings) as clinvar_client,
+        UniProtClient(settings) as uniprot_client,
     ):
         return {
             "gnomad_ok": await gnomad_client.health_check(),
             "vep_ok": await vep_client.health_check(),
             "clinvar_ok": await clinvar_client.health_check(),
+            "uniprot_ok": await uniprot_client.health_check(),
         }
 
 
@@ -250,6 +296,9 @@ async def web_analyse(
             tmp_path.unlink(missing_ok=True)
 
         response_job_id = resolved_job_id or str(uuid.uuid4())
+        _purge_expired_job_dirs(
+            Path(settings.web_reports_dir), settings.web_reports_retention_hours
+        )
         job_dir = Path(settings.web_reports_dir) / response_job_id
         orchestrator = ReportOrchestrator(job_dir)
 
@@ -288,6 +337,7 @@ async def web_analyse(
     finally:
         if resolved_job_id is not None:
             _get_or_create_progress_queue(resolved_job_id).put_nowait(_PROGRESS_SENTINEL)
+            _release_progress_queue_later(resolved_job_id)
 
 
 @router.get(
@@ -303,6 +353,8 @@ async def analyse_progress(job_id: str) -> StreamingResponse:
     time-based fake progress bar. The stream ends (after one final
     ``event: complete`` message) once the corresponding
     ``POST /analyse`` request finishes, whether it succeeded or failed.
+    It also ends, without a ``complete`` event, after
+    ``_PROGRESS_IDLE_TIMEOUT_SECONDS`` with no message.
     """
     try:
         uuid.UUID(job_id)
@@ -314,7 +366,12 @@ async def analyse_progress(job_id: str) -> StreamingResponse:
     async def event_stream() -> AsyncIterator[str]:
         try:
             while True:
-                message = await queue.get()
+                try:
+                    message = await asyncio.wait_for(
+                        queue.get(), timeout=_PROGRESS_IDLE_TIMEOUT_SECONDS
+                    )
+                except TimeoutError:
+                    return
                 if message == _PROGRESS_SENTINEL:
                     yield "event: complete\ndata: complete\n\n"
                     return

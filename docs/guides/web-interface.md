@@ -27,7 +27,7 @@ result than either of them.
 ## The flow
 
 1. **`GET /`** — an upload form, plus a live connectivity check against
-   gnomAD, VEP, and ClinVar (the same three checks
+   gnomAD, VEP, ClinVar, and UniProt (the same four checks
    `/api/v1/health/ready` performs). If any are unreachable, a warning
    explains that analysis will still run but affected criteria will be
    reported as `requires_clinical_input` rather than silently skipped.
@@ -51,7 +51,7 @@ result than either of them.
    `GET /analyse/{job_id}/progress` streams the *actual* pipeline
    stage each variant is currently at (`querying gnomAD` →
    `querying VEP` → `querying ClinVar` → `querying REVEL` →
-   `querying ClinGen` → `scoring`, per variant, then a final
+   `querying ClinGen` → `querying UniProt` → `scoring`, per variant, then a final
    `complete` event) — sourced directly from
    `alleleiq.pipeline.build_evidence_report`'s optional `on_progress`
    hook, not a simulated or time-based progress bar. This is
@@ -86,7 +86,14 @@ string or stack trace — instead of a generic failure page.
 `ALLELEIQ_WEB_REPORTS_DIR` (default `./reports/web`) controls where
 the web interface writes generated reports, one subdirectory per
 analysis job. This is independent of the CLI's `--output-dir`, which
-defaults to `./reports`.
+defaults to `./reports`. Job directories older than
+`ALLELEIQ_WEB_REPORTS_RETENTION_HOURS` (default `24`; `0` keeps them
+indefinitely) are deleted when the next analysis starts, so a report
+link stops working after that period. Download anything you need to
+keep.
+
+A variant that appears more than once in a VCF is analysed once, at
+its first occurrence; the CLI prints how many duplicates it skipped.
 
 ## Known limitations
 
@@ -96,6 +103,9 @@ defaults to `./reports`.
   API's rate limiter (see `alleleiq.api.middleware`). A multi-worker
   deployment would need a shared pub/sub layer (e.g. Redis) for a
   progress subscription to reliably reach a worker other than the one
-  handling the corresponding `POST /analyse`.
+  handling the corresponding `POST /analyse`. A job's queue is
+  released when its subscriber finishes, or 60 seconds after the
+  analysis ends if nobody subscribed; a subscriber that receives no
+  message for 10 minutes is disconnected.
 - The interface has no authentication, matching the JSON API's
   current scope (see `SECURITY.md`).

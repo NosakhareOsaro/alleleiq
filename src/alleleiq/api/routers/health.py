@@ -9,6 +9,7 @@ from alleleiq.api.dependencies import get_settings_dependency
 from alleleiq.api.schemas import HealthResponse, ReadinessResponse
 from alleleiq.clients.clinvar import ClinVarClient
 from alleleiq.clients.gnomad import GnomADClient
+from alleleiq.clients.uniprot import UniProtClient
 from alleleiq.clients.vep import VEPClient
 from alleleiq.config import Settings
 
@@ -29,7 +30,7 @@ async def health() -> HealthResponse:
 async def ready(
     response: Response, settings: Settings = Depends(get_settings_dependency)
 ) -> ReadinessResponse:
-    """Check connectivity to gnomAD, VEP, and ClinVar.
+    """Check connectivity to gnomAD, VEP, ClinVar, and UniProt.
 
     Returns HTTP 503 (with the same body) if any upstream service is
     unreachable, so this can be used directly as a load-balancer or
@@ -39,12 +40,14 @@ async def ready(
         GnomADClient(settings) as gnomad_client,
         VEPClient(settings) as vep_client,
         ClinVarClient(settings) as clinvar_client,
+        UniProtClient(settings) as uniprot_client,
     ):
         gnomad_ok = await gnomad_client.health_check()
         vep_ok = await vep_client.health_check()
         clinvar_ok = await clinvar_client.health_check()
+        uniprot_ok = await uniprot_client.health_check()
 
-    all_ready = gnomad_ok and vep_ok and clinvar_ok
+    all_ready = gnomad_ok and vep_ok and clinvar_ok and uniprot_ok
     if not all_ready:
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
 
@@ -53,4 +56,5 @@ async def ready(
         gnomad=gnomad_ok,
         vep=vep_ok,
         clinvar=clinvar_ok,
+        uniprot=uniprot_ok,
     )

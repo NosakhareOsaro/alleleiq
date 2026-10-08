@@ -1,8 +1,8 @@
 """Integration tests for the FastAPI REST API, via FastAPI's TestClient.
 
 These tests exercise the full app (routing, middleware, pipeline
-wiring) but mock the external evidence sources (gnomAD, VEP, ClinVar)
-at the transport level, the same technique used in the Phase 2 client
+wiring) but mock the external evidence sources (gnomAD, VEP, ClinVar,
+UniProt) at the transport level, the same technique used in the Phase 2 client
 unit tests. This keeps the checked-in, CI-run test suite fully offline
 and deterministic; the clients themselves were separately verified
 against the real live APIs during development (see the commit that
@@ -21,6 +21,7 @@ from fastapi.testclient import TestClient
 import alleleiq.pipeline as pipeline_module
 from alleleiq.clients.clinvar import ClinVarClient
 from alleleiq.clients.gnomad import GnomADClient
+from alleleiq.clients.uniprot import UniProtClient
 from alleleiq.clients.vep import VEPClient
 from alleleiq.config import get_settings
 
@@ -70,6 +71,30 @@ def _mocked_clinvar_client_factory() -> type[ClinVarClient]:
     return _FakeClinVarClient
 
 
+def _mocked_uniprot_client_factory() -> type[UniProtClient]:
+    class _FakeUniProtClient(UniProtClient):  # type: ignore[misc]
+        async def __aenter__(self) -> _FakeUniProtClient:
+            async def handler(request: httpx.Request) -> httpx.Response:
+                return httpx.Response(200, json={"results": []})
+
+            self._client = httpx.AsyncClient(
+                base_url=self._base_url, transport=httpx.MockTransport(handler)
+            )
+            return self
+
+    return _FakeUniProtClient
+
+
+def _healthy_client_factory(base: type[Any], *, healthy: bool = True) -> type[Any]:
+    """Wrap a client class so health_check() answers without a real request."""
+
+    class _HealthyClient(base):  # type: ignore[misc,valid-type]
+        async def health_check(self) -> bool:
+            return healthy
+
+    return _HealthyClient
+
+
 @pytest.fixture
 def mocked_evidence_sources(
     monkeypatch: pytest.MonkeyPatch,
@@ -84,6 +109,17 @@ def mocked_evidence_sources(
         pipeline_module, "VEPClient", _mocked_vep_client_factory(vep_missense_response)
     )
     monkeypatch.setattr(pipeline_module, "ClinVarClient", _mocked_clinvar_client_factory())
+    monkeypatch.setattr(pipeline_module, "UniProtClient", _mocked_uniprot_client_factory())
+
+    import alleleiq.api.routers.health as health_module
+
+    for name, cls in (
+        ("GnomADClient", GnomADClient),
+        ("VEPClient", VEPClient),
+        ("ClinVarClient", ClinVarClient),
+        ("UniProtClient", UniProtClient),
+    ):
+        monkeypatch.setattr(health_module, name, _healthy_client_factory(cls))
 
 
 @pytest.fixture
@@ -192,12 +228,33 @@ class TestHealthEndpoints:
         assert body["status"] == "healthy"
         assert "version" in body
 
-    def test_ready_returns_200_or_503_with_service_status(self, client: TestClient) -> None:
+    def test_ready_returns_200_when_every_source_is_reachable(self, client: TestClient) -> None:
         response = client.get("/api/v1/health/ready")
 
-        assert response.status_code in (200, 503)
+        assert response.status_code == 200
+        assert response.json() == {
+            "status": "ready",
+            "gnomad": True,
+            "vep": True,
+            "clinvar": True,
+            "uniprot": True,
+        }
+
+    def test_ready_returns_503_when_uniprot_is_unreachable(
+        self, client: TestClient, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import alleleiq.api.routers.health as health_module
+
+        monkeypatch.setattr(
+            health_module, "UniProtClient", _healthy_client_factory(UniProtClient, healthy=False)
+        )
+
+        response = client.get("/api/v1/health/ready")
+
+        assert response.status_code == 503
         body = response.json()
-        assert set(body.keys()) == {"status", "gnomad", "vep", "clinvar"}
+        assert body["status"] == "degraded"
+        assert body["uniprot"] is False
 
 
 class TestRateLimiting:

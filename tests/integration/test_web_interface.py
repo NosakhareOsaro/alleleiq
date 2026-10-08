@@ -8,7 +8,10 @@ suite stays offline and deterministic.
 
 from __future__ import annotations
 
+import asyncio
+import os
 import re
+import time
 import uuid
 from collections.abc import Iterator
 from pathlib import Path
@@ -21,6 +24,7 @@ from fastapi.testclient import TestClient
 import alleleiq.pipeline as pipeline_module
 from alleleiq.clients.clinvar import ClinVarClient
 from alleleiq.clients.gnomad import GnomADClient
+from alleleiq.clients.uniprot import UniProtClient
 from alleleiq.clients.vep import VEPClient
 from alleleiq.config import get_settings
 
@@ -70,6 +74,20 @@ def _mocked_clinvar_client_factory() -> type[ClinVarClient]:
     return _FakeClinVarClient
 
 
+def _mocked_uniprot_client_factory() -> type[UniProtClient]:
+    class _FakeUniProtClient(UniProtClient):  # type: ignore[misc]
+        async def __aenter__(self) -> _FakeUniProtClient:
+            async def handler(request: httpx.Request) -> httpx.Response:
+                return httpx.Response(200, json={"results": []})
+
+            self._client = httpx.AsyncClient(
+                base_url=self._base_url, transport=httpx.MockTransport(handler)
+            )
+            return self
+
+    return _FakeUniProtClient
+
+
 def _healthy_client_factory(base: type[Any]) -> type[Any]:
     """Wrap a client class so health_check() reports reachable without a real request."""
 
@@ -90,16 +108,19 @@ def mocked_evidence_sources(
     gnomad_cls = _healthy_client_factory(_mocked_gnomad_client_factory(gnomad_brca2_response))
     vep_cls = _healthy_client_factory(_mocked_vep_client_factory(vep_missense_response))
     clinvar_cls = _healthy_client_factory(_mocked_clinvar_client_factory())
+    uniprot_cls = _healthy_client_factory(_mocked_uniprot_client_factory())
 
     monkeypatch.setattr(pipeline_module, "GnomADClient", gnomad_cls)
     monkeypatch.setattr(pipeline_module, "VEPClient", vep_cls)
     monkeypatch.setattr(pipeline_module, "ClinVarClient", clinvar_cls)
+    monkeypatch.setattr(pipeline_module, "UniProtClient", uniprot_cls)
 
     import alleleiq.web.router as web_router_module
 
     monkeypatch.setattr(web_router_module, "GnomADClient", gnomad_cls)
     monkeypatch.setattr(web_router_module, "VEPClient", vep_cls)
     monkeypatch.setattr(web_router_module, "ClinVarClient", clinvar_cls)
+    monkeypatch.setattr(web_router_module, "UniProtClient", uniprot_cls)
 
 
 @pytest.fixture
@@ -143,6 +164,7 @@ class TestIndexPage:
         assert response.status_code == 200
         assert "CLINICAL DECISION SUPPORT ONLY" in response.text
         assert "reachable" in response.text
+        assert "UniProt:" in response.text
         assert "Analyse" in response.text
 
     def test_index_page_has_no_javascript_requirement_on_core_form(
@@ -207,6 +229,14 @@ class TestWebAnalyse:
         assert response.status_code == 200
         assert response.text.count("report-card") == 2
         assert "2 variants analysed" in response.text
+
+    def test_duplicate_variant_is_analysed_once(self, client: TestClient) -> None:
+        vcf = _single_snv_vcf_bytes() + b"13\t32340301\t.\tT\tC\t100\tPASS\t.\n"
+
+        response = client.post("/analyse", files={"vcf_file": ("dup.vcf", vcf, "text/plain")})
+
+        assert response.status_code == 200
+        assert response.text.count("report-card") == 1
 
     def test_malformed_vcf_renders_clinical_grade_error(self, client: TestClient) -> None:
         response = client.post(
@@ -390,3 +420,76 @@ class TestProgressSSE:
             "/analyse", files={"vcf_file": ("v.vcf", _single_snv_vcf_bytes(), "text/plain")}
         )
         assert response.status_code == 200
+
+
+class TestProgressQueueLifecycle:
+    async def test_unsubscribed_queue_is_released_after_the_grace_period(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import alleleiq.web.router as web_router_module
+
+        monkeypatch.setattr(web_router_module, "_UNSUBSCRIBED_QUEUE_TTL_SECONDS", 0.01)
+        job_id = str(uuid.uuid4())
+        web_router_module._get_or_create_progress_queue(job_id)
+
+        web_router_module._release_progress_queue_later(job_id)
+        await asyncio.sleep(0.05)
+
+        assert job_id not in web_router_module._progress_queues
+
+    async def test_idle_subscription_ends_and_releases_its_queue(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import alleleiq.web.router as web_router_module
+
+        monkeypatch.setattr(web_router_module, "_PROGRESS_IDLE_TIMEOUT_SECONDS", 0.01)
+        job_id = str(uuid.uuid4())
+
+        response = await web_router_module.analyse_progress(job_id)
+        events = [chunk async for chunk in response.body_iterator]
+
+        assert events == []
+        assert job_id not in web_router_module._progress_queues
+
+
+class TestReportRetention:
+    @staticmethod
+    def _make_job_dir(root: Path, name: str, age_hours: float) -> Path:
+        job_dir = root / name
+        job_dir.mkdir(parents=True)
+        (job_dir / "report.json").write_text("{}")
+        stamp = time.time() - age_hours * 3600
+        os.utime(job_dir, (stamp, stamp))
+        return job_dir
+
+    def test_expired_job_directories_are_removed(self, tmp_path: Path) -> None:
+        from alleleiq.web.router import _purge_expired_job_dirs
+
+        old_job = self._make_job_dir(tmp_path, str(uuid.uuid4()), age_hours=30)
+        recent_job = self._make_job_dir(tmp_path, str(uuid.uuid4()), age_hours=1)
+        unrelated = self._make_job_dir(tmp_path, "keep-me", age_hours=30)
+
+        _purge_expired_job_dirs(tmp_path, retention_hours=24)
+
+        assert not old_job.exists()
+        assert recent_job.exists()
+        assert unrelated.exists()
+
+    def test_zero_retention_keeps_everything(self, tmp_path: Path) -> None:
+        from alleleiq.web.router import _purge_expired_job_dirs
+
+        old_job = self._make_job_dir(tmp_path, str(uuid.uuid4()), age_hours=1000)
+
+        _purge_expired_job_dirs(tmp_path, retention_hours=0)
+
+        assert old_job.exists()
+
+    def test_new_analysis_purges_expired_jobs(self, client: TestClient, tmp_path: Path) -> None:
+        old_job = self._make_job_dir(tmp_path / "web-reports", str(uuid.uuid4()), age_hours=48)
+
+        response = client.post(
+            "/analyse", files={"vcf_file": ("v.vcf", _single_snv_vcf_bytes(), "text/plain")}
+        )
+
+        assert response.status_code == 200
+        assert not old_job.exists()

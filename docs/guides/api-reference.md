@@ -74,13 +74,13 @@ Liveness check. Always `200` if the process can respond at all.
 
 ## `GET /api/v1/health/ready`
 
-Readiness check: live connectivity to gnomAD, VEP, and ClinVar.
+Readiness check: live connectivity to gnomAD, VEP, ClinVar, and UniProt.
 
 **Response** — `200` if all reachable, **`503`** (same body) if any
 upstream service is unreachable:
 
 ```json
-{"status": "ready", "gnomad": true, "vep": true, "clinvar": true}
+{"status": "ready", "gnomad": true, "vep": true, "clinvar": true, "uniprot": true}
 ```
 
 Suitable for direct use as a load-balancer or orchestrator readiness

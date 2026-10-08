@@ -20,8 +20,13 @@
         {{ 'reachable' if clinvar_ok else 'unreachable' }}
       </span>
     </li>
+    <li>UniProt:
+      <span class="{{ 'status-ok' if uniprot_ok else 'status-down' }}">
+        {{ 'reachable' if uniprot_ok else 'unreachable' }}
+      </span>
+    </li>
   </ul>
-  {% if not (gnomad_ok and vep_ok and clinvar_ok) %}
+  {% if not (gnomad_ok and vep_ok and clinvar_ok and uniprot_ok) %}
   <p class="text-xs status-degraded mt-2">
     One or more evidence sources is currently unreachable. Analysis will still run --
     affected criteria will be reported as <code>requires_clinical_input</code> rather than

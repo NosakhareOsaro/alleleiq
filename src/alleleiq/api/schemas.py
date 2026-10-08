@@ -54,6 +54,7 @@ class ReadinessResponse(BaseModel):
     gnomad: bool
     vep: bool
     clinvar: bool
+    uniprot: bool
 
 
 class ErrorResponse(BaseModel):

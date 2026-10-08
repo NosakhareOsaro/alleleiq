@@ -1,6 +1,6 @@
 # Safety Design: Human-in-the-Loop Architecture
 
-AlleleIQ's IVDR Class C / UK MDR Annex II List B classification (see
+AlleleIQ's IVDR Class C classification (see
 [Intended Use](intended-use.md)) is not a label bolted on after the
 fact — it shapes concrete design decisions throughout the codebase.
 This page documents the specific mechanisms that keep a qualified

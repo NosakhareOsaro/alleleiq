@@ -99,5 +99,5 @@ explains an empty ClinVar context elsewhere in the report).
   sources** (e.g. ClinVar): expected when the deciding evidence is
   functional, segregation, or hotspot-based — see
   [ACMG Framework](../architecture/acmg-framework.md)'s validation
-  section for why this is the designed, safe behaviour of a 6-criterion
+  section for why this is the designed, safe behaviour of an 11-criterion
   automated subset, not a detection failure.

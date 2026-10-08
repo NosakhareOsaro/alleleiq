@@ -51,7 +51,9 @@ run your first analysis.
 ## Regulatory context
 
 AlleleIQ is classified as **IVDR Class C** under EU IVDR 2017/746 Rule
-3(i) and Rule 3(k), and **UK MDR 2002 Part IV Annex II List B**. See
+3(i) and Rule 3(k) (Rule 3(h) also applies, with the same class). In
+Great Britain it is expected to be a **general IVD** under UK MDR 2002
+Part IV, pending confirmation. See
 [Intended Use](clinical/intended-use.md) and
 [Safety Design](clinical/safety-design.md) for the full regulatory and
 human-in-the-loop safety rationale.

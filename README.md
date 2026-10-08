@@ -199,7 +199,11 @@ expert-panel-reviewed variants).
 ## Regulatory context
 
 AlleleIQ is classified as **IVDR Class C** under EU IVDR 2017/746 Rule 3(i)
-and Rule 3(k), and **UK MDR 2002 Part IV Annex II List B**. It is a
+and Rule 3(k), confirmed by InnoScot Health in June 2026; Rule 3(h) also
+applies to the hereditary cancer genes and gives the same class. In Great
+Britain it is expected to be a **general IVD** under UK MDR 2002 Part IV,
+since it is not on the closed Annex II lists; that is awaiting confirmation
+from InnoScot Health. It is a
 clinical decision support tool, not an autonomous diagnostic. Every report
 carries a non-optional clinical disclaimer stating that its output is a
 preliminary evidence summary for review, not a classification. See

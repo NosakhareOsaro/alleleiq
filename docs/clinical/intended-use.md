@@ -2,14 +2,13 @@
 
 **Document ID:** AIQ-REG-001 (summary)
 **Product:** AlleleIQ
-**Document version:** 0.2 (draft)
+**Document version:** 0.3 (draft)
 **Software version:** 0.2.0
 
-This page summarises the Intended Use Statement AIQ-REG-001 v0.2, which
+This page summarises the Intended Use Statement AIQ-REG-001 v0.3, which
 is maintained as a separate controlled document. It describes what the
-v0.2.0 software actually implements; where the full statement covers
-broader scope (for example CNV interpretation or literature evidence),
-that scope is not yet implemented here.
+v0.2.0 software actually implements. Copy-number and structural
+variants are out of scope at this version.
 
 ## Statement of intended use
 
@@ -65,8 +64,15 @@ AlleleIQ is classified as:
   intended for the management of patients suffering from a
   life-threatening disease or condition). InnoScot Health confirmed this
   classification basis in correspondence dated 19 June 2026; Rule 2 is
-  not applicable.
-- **UK MDR 2002, Part IV, Annex II, List B**.
+  not applicable. Rule 3(h) (screening, diagnosis or staging of cancer)
+  also applies to the hereditary cancer genes; MDCG 2020-16 lists
+  hereditary cancer predisposition tests under it. It gives the same
+  class.
+- **Great Britain:** expected to be a **general IVD** under UK MDR 2002
+  Part IV, because AlleleIQ is not on the closed Annex II List A or
+  List B. General IVDs are self-declared and registered with the MHRA,
+  with no UK Approved Body. This is awaiting confirmation from InnoScot
+  Health.
 
 This classification reflects that AlleleIQ provides decision-support
 information that could influence a clinical decision, but does not

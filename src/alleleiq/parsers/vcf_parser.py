@@ -60,6 +60,7 @@ class ParsingStatistics:
     variants_filtered: int
     variants_normalised: int
     genome_build_verified: bool
+    duplicates_removed: int = 0
 
 
 def parse_vcf(
@@ -75,7 +76,10 @@ def parse_vcf(
     Returns:
         A tuple of (parsed variants, parsing statistics). Multi-allelic
         sites are split into one biallelic ``Variant`` per alternate
-        allele.
+        allele. A variant that appears more than once (after
+        normalisation) is kept only at its first occurrence: reports are
+        named by variant ID, so a repeat would overwrite the first
+        report and be analysed twice for the same result.
 
     Raises:
         VariantParseError: If the file does not exist, cannot be opened,
@@ -107,12 +111,15 @@ def parse_vcf(
     if total_records == 0:
         raise VariantParseError(f"VCF file contains no variant records: {vcf_path}")
 
+    variants, duplicates_removed = _drop_duplicates(variants)
+
     stats = ParsingStatistics(
         total_records=total_records,
         variants_emitted=len(variants),
         variants_filtered=variants_filtered,
         variants_normalised=variants_normalised,
         genome_build_verified=genome_build_verified,
+        duplicates_removed=duplicates_removed,
     )
     logger.info(
         "VCF parsing complete",
@@ -122,9 +129,26 @@ def parse_vcf(
             "variants_filtered": stats.variants_filtered,
             "variants_normalised": stats.variants_normalised,
             "genome_build_verified": stats.genome_build_verified,
+            "duplicates_removed": stats.duplicates_removed,
         },
     )
     return variants, stats
+
+
+def _drop_duplicates(variants: list[Variant]) -> tuple[list[Variant], int]:
+    """Keep the first occurrence of each variant ID, preserving order."""
+    seen: set[str] = set()
+    unique: list[Variant] = []
+    for variant in variants:
+        if variant.variant_id in seen:
+            logger.warning(
+                "duplicate variant in VCF; analysing it once",
+                extra={"variant_id": variant.variant_id},
+            )
+            continue
+        seen.add(variant.variant_id)
+        unique.append(variant)
+    return unique, len(variants) - len(unique)
 
 
 def _parse_records(

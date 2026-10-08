@@ -152,3 +152,39 @@ class TestMalformedInput:
     def test_missing_file_raises_variant_parse_error(self, tmp_path: Path) -> None:
         with pytest.raises(VariantParseError, match="not found"):
             parse_vcf(tmp_path / "does_not_exist.vcf")
+
+
+class TestDuplicateVariants:
+    def test_repeated_variant_is_kept_once(self, tmp_path: Path) -> None:
+        vcf_path = _write_vcf(
+            tmp_path,
+            "17\t100\t.\tA\tG\t100\tPASS\t.\n"
+            "17\t200\t.\tC\tT\t100\tPASS\t.\n"
+            "17\t100\t.\tA\tG\t100\tPASS\t.\n",
+        )
+
+        variants, stats = parse_vcf(vcf_path)
+
+        assert [v.variant_id for v in variants] == ["17-100-A-G", "17-200-C-T"]
+        assert stats.total_records == 3
+        assert stats.variants_emitted == 2
+        assert stats.duplicates_removed == 1
+
+    def test_records_that_normalise_to_the_same_variant_are_deduplicated(
+        self, tmp_path: Path
+    ) -> None:
+        vcf_path = _write_vcf(
+            tmp_path,
+            # CAT>CATT at 100 normalises to A>AT at 101, the same variant as the second record.
+            "17\t100\t.\tCAT\tCATT\t100\tPASS\t.\n" "17\t101\t.\tA\tAT\t100\tPASS\t.\n",
+        )
+
+        variants, stats = parse_vcf(vcf_path)
+
+        assert [v.variant_id for v in variants] == ["17-101-A-AT"]
+        assert stats.duplicates_removed == 1
+
+    def test_no_duplicates_reports_zero(self, single_snv_vcf_path: Path) -> None:
+        _, stats = parse_vcf(single_snv_vcf_path)
+
+        assert stats.duplicates_removed == 0

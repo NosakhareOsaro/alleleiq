@@ -105,6 +105,11 @@ def analyse(
         f"Parsed [bold]{stats.variants_emitted}[/bold] variant(s) from {vcf_file} "
         f"({stats.variants_filtered} filtered, {stats.variants_normalised} normalised)."
     )
+    if stats.duplicates_removed:
+        console.print(
+            f"[yellow]Note:[/yellow] {stats.duplicates_removed} duplicate variant record(s) "
+            "were skipped; each variant is analysed once."
+        )
     if not stats.genome_build_verified:
         console.print(
             "[yellow]Warning:[/yellow] genome build could not be verified from the VCF header; "

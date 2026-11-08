@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use AlleleIQ, please cite it as below."
+title: "AlleleIQ: population-inclusive evidence aggregation for clinical genomic variant interpretation"
+type: software
+version: "0.2.0"
+authors:
+  - family-names: "Osaro"
+    given-names: "Nosakhare Odionfo"
+    email: "osaronosakhare@gmail.com"
+    orcid: "https://orcid.org/0009-0004-9778-1161"
+license: Apache-2.0
+repository-code: "https://github.com/NosakhareOsaro/alleleiq"
+abstract: >-
+  AlleleIQ aggregates evidence for clinical genomic variant interpretation
+  and applies ACMG/AMP and ACGS 2024 criteria in a structured, auditable
+  way, with explicit reporting of where evidence is thin or absent. It does
+  not classify variants: classification remains with a qualified Clinical
+  Genetic Scientist. The project's focus is population inclusivity in the
+  evidence base underlying interpretation.
+keywords:
+  - clinical genomics
+  - variant interpretation
+  - ACMG/AMP
+  - ACGS 2024
+  - population genetics
+  - health equity
+  - bioinformatics

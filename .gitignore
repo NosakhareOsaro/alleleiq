@@ -85,3 +85,9 @@ site/
 # git-sized reference datasets directly.
 data/revel_v1.3_all_chromosomes.tsv.gz
 data/revel_v1.3_all_chromosomes.tsv.gz.tbi
+
+# Commercial and regulatory material kept locally, deliberately not published:
+# AlleleIQ exec summaries / IUS / lab presentations are commercially sensitive,
+# and the Innoscot regulatory-pathway guidance is a third-party copyrighted PDF.
+Updated docs/
+innoscotguidanceontheregulatorypathway/
